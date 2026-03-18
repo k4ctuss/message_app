@@ -1,7 +1,7 @@
 ---
 title: Projet React 
 author:  
-- A compléter avec vos noms
+- Blanc Nolan
 --- 
 
 ## Installation
