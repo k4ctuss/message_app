@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Déploiement Frontend</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f4f7fb;
+      color: #333;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      text-align: center;
+    }
+
+    .container {
+      text-align: left;
+      background-color: #fff;
+      border-radius: 8px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      padding: 40px;
+      max-width: 600px;
+      width: 100%;
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+      color: #1f2328;
+    }
+    p {
+      font-size: 1.2rem;
+      margin-bottom: 20px;
+      color: #555;
+    }
+    .note {
+      text-align: left;
+      margin-top: 30px;
+      color: #777;
+      background-color: #f9f9f9;
+      padding: 10px;
+      border-radius: 5px;
+      border: 1px solid #ddd;
+    }
+    code {
+      font-size: 1.2rem;
+      background-color: #eee;
+      padding: 2px 8px;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <h1>Déploiement de votre Frontend</h1>
+    <p>
+      Une fois votre frontend déployé, ce fichier sera masqué par votre
+      application présente dans <code>dist/</code> et servi directement depuis
+      ce même endroit.
+    </p>
+    <div class="note">
+      <p>
+        <strong>Note:</strong> ce fichier fait partie de la configuration
+        initiale du projet. Il est utilisé comme page d'accueil par défaut
+        pendant le développement, mais une fois le build effectué, il sera
+        remplacé par votre application React servie par Express.
+      </p>
+      <p>
+        Pour construire votre application, exécutez simplement la commande
+        <code>npm run build</code> dans votre terminal.
+      </p>
+    </div>
+  </div>
+
+</body>
+</html>
