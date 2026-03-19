@@ -32,7 +32,8 @@ app.use('/', express.static('../frontend/public'))
 app.use('/', express.static('./src/frontend'))
 
 // Assign Routes
-app.use('/api', require('./routes/router.js'))
+app.use('/api', require('./routes/user.js'))
+app.use('/', require('./routes/connection.js'))
 // Handle errors
 app.use(errorHandler())
 

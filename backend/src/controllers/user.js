@@ -11,6 +11,26 @@ function validPassword (password) {
   return /^(?=.*[\d])(?=.*[A-Z])(?=.*[a-z])(?=.*[!@#$%^&*])[\w!@#$%^&*]{8,}$/.test(password)
 }
 
+// verify that user is the admin.
+async function verifyAdmin(req, res, next){
+
+    const user = await userModel.findOne({ where: { email: req.login }})
+
+    if(!user || !user.isAdmin){
+        throw new CodeError('Forbidden', status.FORBIDDEN);
+    }
+    next();
+}
+
+// verify that req.login is a user in the db
+async function isUserExist(req, res, next){
+    const user = await userModel.findOne({ where: { email: req.login }})
+    if(!user){
+        throw new CodeError('Forbidden', status.FORBIDDEN);
+    }
+    next();
+}
+
 module.exports = {
   async login (req, res) {
     // #swagger.tags = ['Users']
@@ -19,6 +39,7 @@ module.exports = {
     if (!has(req.body, ['email', 'password'])) throw new CodeError('You must specify the email and password', status.BAD_REQUEST)
     const { email, password } = req.body
     const user = await userModel.findOne({ where: { email } })
+    console.log(user);
     if (user) {
       if (await bcrypt.compare(password, user.passhash)) {
         const token = jws.sign({ header: { alg: 'HS256' }, payload: email, secret: TOKENSECRET })
@@ -40,7 +61,6 @@ module.exports = {
     res.json({ status: true, message: 'User Added' })
   },
   async getUsers (req, res) {
-    // TODO : verify if the token is valid...
     // #swagger.tags = ['Users']
     // #swagger.summary = 'Get All users'
     const data = await userModel.findAll({ attributes: ['id', 'name', 'email'] })
@@ -73,5 +93,20 @@ module.exports = {
     const { id } = req.params
     await userModel.destroy({ where: { id } })
     res.json({ status: true, message: 'User deleted' })
-  }
+  },
+  async updatePassword(req, res){
+    // #swagger.tags = ['Users']
+    // #swagger.summary = 'update password of the currrently logged-in user'
+    // #swagger.parameters['obj'] = { in: 'body', schema: { $password: 'myNewPassword123' }}
+    if(!has(req.body, ['password']) || !req.login) throw new CodeError('User not connected or password not provided', status.BAD_REQUEST);
+    const {password} = req.body;
+    console.log(validPassword(password));
+    if(!validPassword(password)) throw new CodeError('Weak password!', status.BAD_REQUEST);
+    const newPasswordHash = await bcrypt.hash(password, 2);
+    await userModel.update({passhash:newPasswordHash}, { where: { email: req.login } })
+    res.json({ status: true, message: 'Password updated' })
+
+  },
+  verifyAdmin,
+  isUserExist
 }
