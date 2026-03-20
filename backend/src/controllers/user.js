@@ -28,6 +28,7 @@ async function isUserExist(req, res, next){
     if(!user){
         throw new CodeError('Forbidden', status.FORBIDDEN);
     }
+    req.user = user;
     next();
 }
 

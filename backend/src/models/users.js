@@ -1,5 +1,6 @@
 const Sequelize = require('sequelize')
 const db = require('./database.js')
+const groups = require('./groups.js');
 const users = db.define('users', {
   id: {
     primaryKey: true,
@@ -30,4 +31,25 @@ const users = db.define('users', {
     default:false
   }
 }, { timestamps: false })
+
+// association create/own.    user 1-----n group
+users.hasMany(groups, {foreignKey: 'owner', as:'createOrOwn'});
+groups.belongsTo(users, {foreignKey: 'owner', as:'createOrOwn'});
+
+users.addHook('beforeDestroy', async(user, options)=>{
+  const admin = await users.findOne({where:{isAdmin:true}});
+  const transaction = options.transaction;
+
+  await groups.update(
+    {owner:admin?.id ?? null},
+    {
+      where:{owner:user.id},
+      transaction
+    }
+  );
+});
+
+// association isMember    user n-----n group
+users.belongsToMany(groups, {through: 'isMember', as: 'groups'});
+groups.belongsToMany(users, {through: 'isMember', as: 'members'});
 module.exports = users

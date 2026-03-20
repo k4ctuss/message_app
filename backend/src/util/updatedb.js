@@ -1,4 +1,5 @@
 const userModel = require('../models/users.js')
+const groupModel = require('../models/groups.js')
 const bcrypt = require('bcrypt');
 // Ajouter ici les nouveaux require des nouveaux modèles
 
@@ -10,11 +11,14 @@ const bcrypt = require('bcrypt');
   // Initialise la base avec quelques données
   const passhash = await bcrypt.hash('123456', 2);
   console.log(passhash)
-  await userModel.create({
+  const nolan = await userModel.create({
     name: 'nolan blanc', email: 'nolan.blanc@grenoble-inp.org', passhash, isAdmin:true
   })
   
   // Ajouter ici le code permettant d'initialiser par défaut la base de donnée
+  const myGroup = await groupModel.create({ name: 'superGroup'});
+  myGroup.setCreateOrOwn(nolan);
 
+  myGroup.addMember(nolan);
 
 })()

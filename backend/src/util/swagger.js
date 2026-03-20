@@ -1,7 +1,7 @@
 const swaggerAutogen = require('swagger-autogen')()
 
 const outputFile = 'swagger_output.json'
-const endpointsFiles = ['src/routes/user.js', 'src/routes/connection.js']
+const endpointsFiles = ['src/routes/protected.js', 'src/routes/connection.js']
 
 swaggerAutogen(outputFile, endpointsFiles, {
   securityDefinitions: {

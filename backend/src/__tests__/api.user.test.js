@@ -162,7 +162,8 @@ test('Test update password', async()=>{
     .send({password: 'myNewPassword&1234' });
   expect(response.statusCode).toBe(200);
   expect(response.body.message).toBe('Password updated');
-})
+});
+
 
 
 
