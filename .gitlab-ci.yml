@@ -62,13 +62,16 @@ semgrep-security-report:
   script:
     - apk add gawk
     - apk add --no-cache python3 py3-pip
-    - pip3 install anybadge
+    - python3 -m venv .venv
+    - . .venv/bin/activate
+    - pip install anybadge
     # Voir https://semgrep.dev/r pour la sélection des types d'analyse
     - 'semgrep --config "p/default" --config  "r/javascript" --config  "r/html" --config "r/css" --gitlab-sast -o gl-sast-semgrep-report.json  .'
     - BADGES="javascript html dockerfile"
     # et https://github.com/returntocorp/semgrep-rules/tree/develop
     - 'for b in $BADGES; do semgrep --config "r/${b}" -o "semgrep_${b}.report.txt" .;done'
     - "for b in $BADGES; do SCORE=$(gawk 'match($0,/([0-9]+) Code Finding/,a){print a[1]}' semgrep_${b}.report.txt);echo $SCORE;anybadge -l $b -v _${SCORE} > $b.badge.svg;done"
+    - deactivate
   allow_failure: true
   artifacts:
     reports:
