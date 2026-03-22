@@ -9,6 +9,7 @@ lint-js:
     - docker
   image: node
   script:
+    - cd backend
     - npm install
     - npx eslint backend/src/*.js > lintes_report.txt 2>&1 || true
   artifacts:            # Le rapport sera disponible pour d'autres jobs
