@@ -1,6 +1,8 @@
 stages:
  - lint
  - test
+ - sonarqube-check
+ - security-report
  - deploy
 
 lint-js:
@@ -30,6 +32,50 @@ jest:
     when: always        # l’artefact est rendu disponible même s’il y a des erreurs
     paths:
       - jest_report.txt
+
+sonarqube-report:
+  stage: sonarqube-check
+  image: 
+    name: sonarsource/sonar-scanner-cli:5.0
+    entrypoint: [""]
+  variables:
+    SONAR_USER_HOME: "${CI_PROJECT_DIR}/.sonar"  # Defines the location of the analysis task cache
+    GIT_DEPTH: "0"  # Tells git to fetch all the branches of the project, required by the analysis task
+  cache:
+    key: "${CI_JOB_NAME}"
+    paths:
+      - .sonar/cache
+  before_script:
+    # Les étapes suivantes permettent d'accepter le certificat du serveur de l'Ensimag
+    - wget https://ssl-tools.net/certificates/c2826e266d7405d34ef89762636ae4b36e86cb5e.pem -O /usr/local/share/ca-certificates/loupanov-ca.pem
+    - update-ca-certificates
+    - keytool -import -trustcacerts -file /usr/local/share/ca-certificates/loupanov-ca.pem  -alias sonarqube -keystore "$JAVA_HOME/lib/security/cacerts" -storepass changeit -noprompt
+  script:
+    - sonar-scanner -X # Lance l'analyse distante du projet
+  allow_failure: true
+  only:
+    - main
+
+semgrep-security-report:
+  stage: security-report
+  image: returntocorp/semgrep
+  script:
+    - apk add gawk
+    - pip3 install anybadge
+    # Voir https://semgrep.dev/r pour la sélection des types d'analyse
+    - 'semgrep --config "p/default" --config  "r/javascript" --config  "r/html" --config "r/css" --gitlab-sast -o gl-sast-semgrep-report.json  .'
+    - BADGES="javascript html dockerfile"
+    # et https://github.com/returntocorp/semgrep-rules/tree/develop
+    - 'for b in $BADGES; do semgrep --config "r/${b}" -o "semgrep_${b}.report.txt" .;done'
+    - "for b in $BADGES; do SCORE=$(gawk 'match($0,/([0-9]+) Code Finding/,a){print a[1]}' semgrep_${b}.report.txt);echo $SCORE;anybadge -l $b -v _${SCORE} > $b.badge.svg;done"
+  allow_failure: true
+  artifacts:
+    reports:
+      sast: gl-sast-semgrep-report.json
+    paths:
+      - "*.report.txt"
+      - "*.badge.svg"
+      - gl-sast-semgrep-report.json
 
 # Job pour exposer l'API sur Scalingo
 # URL d'exposition de l'API : https://monAppliChezScalingo.osc-fr1.scalingo.io/

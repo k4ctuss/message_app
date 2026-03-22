@@ -1,3 +1,9 @@
+## Sonar cube badges
+[![Quality gate](https://sonarqube.ensimag.fr/api/project_badges/quality_gate?project=TPFullstack_nolan_blanc&token=sqb_75d1412bd6b7a8827ee2cacbab7b58ac1eb02ee3)](https://sonarqube.ensimag.fr/dashboard?id=TPFullstack_nolan_blanc)
+[![Bugs](https://sonarqube.ensimag.fr/api/project_badges/measure?project=TPFullstack_nolan_blanc&metric=bugs&token=sqb_75d1412bd6b7a8827ee2cacbab7b58ac1eb02ee3)](https://sonarqube.ensimag.fr/dashboard?id=TPFullstack_nolan_blanc)
+[![Coverage](https://sonarqube.ensimag.fr/api/project_badges/measure?project=TPFullstack_nolan_blanc&metric=coverage&token=sqb_75d1412bd6b7a8827ee2cacbab7b58ac1eb02ee3)](https://sonarqube.ensimag.fr/dashboard?id=TPFullstack_nolan_blanc)
+
+
 ---
 title: Projet React 
 author:  
