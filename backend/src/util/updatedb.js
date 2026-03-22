@@ -10,7 +10,6 @@ const bcrypt = require('bcrypt');
   console.log('Base de données créée.')
   // Initialise la base avec quelques données
   const passhash = await bcrypt.hash('123456', 2);
-  console.log(passhash)
   const nolan = await userModel.create({
     name: 'nolan blanc', email: 'nolan.blanc@grenoble-inp.org', passhash, isAdmin:true
   })

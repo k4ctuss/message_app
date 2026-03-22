@@ -3,7 +3,6 @@ const groupModel = require('../models/groups');
 const userModel = require('../models/users');
 const has = require('has-keys');
 const CodeError = require('../util/CodeError');
-const { json, where } = require('sequelize');
 
 
 async function loadGroup(req, res, next){
@@ -69,14 +68,16 @@ module.exports = {
         // #swagger.tags = ['Groups']
         // #swagger.summary = 'Add an user to Group'
         if(!has(req.params, ['uid'])) throw new CodeError('User id not provided', status.BAD_REQUEST);
-        const {uid} = req.param;
+        const {uid} = req.params;
+        const newMember = await userModel.findByPk(uid);
+        if(!newMember) throw new CodeError('User id invalid', status.BAD_REQUEST);
         const {group, user} = req;
         let owner = await group.getCreateOrOwn({attributes:['id']});
         owner = owner.get({plain:true});
 
         if(!user.isAdmin && owner.id !== user.id) throw new CodeError('Forbidden', status.FORBIDDEN);
 
-        const newMember = await userModel.findByPk(uid);
+        
         await group.addMember(newMember);
         res.json({status:true, message:'New member added'});
 
@@ -84,18 +85,21 @@ module.exports = {
     async deleteMember(req, res){
         // #swagger.tags = ['Groups']
         // #swagger.summary = 'Delete an user from Group'
-        if(!has(req.param, ['uid'])) throw new CodeError('User id not provided', status.BAD_REQUEST);
-        const {uid} = req.param;
+        if(!has(req.params, ['uid'])) throw new CodeError('User id not provided', status.BAD_REQUEST);
+        const {uid} = req.params;
+        const member = await userModel.findByPk(uid);
+        if(!member) throw new CodeError('User id invalid', status.BAD_REQUEST);
+
         const {group, user} = req;
         let owner = await group.getCreateOrOwn({attributes:['id']});
-        let members = group.getMembers({attributes:['id']});
+        let members = await group.getMembers({attributes:['id']});
         owner = owner.get({plain:true});
         members = members.map(m=>m.get({plain:true}));
 
-        if(!user.isAdmin && owner.id !== user.id && !members.some(m=>m.id===uid)) throw new CodeError('Forbidden', status.FORBIDDEN);
+        if(!(user.isAdmin || owner.id === user.id || uid == user.id && members.some(m=>m.id === user.id))) throw new CodeError('Forbidden', status.FORBIDDEN);
 
-        await group.removeMemeber(uid);
-        res.json({status:true, message:'New member added'});
+        await group.removeMember(uid);
+        res.json({status:true, message:'Member deleted'});
     },
     async getJoinedGroups(req, res){
         // #swagger.tags = ['Groups']

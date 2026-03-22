@@ -7,8 +7,8 @@
         "setup": "npm install && npm run doc && npm run updatedb",
         "updatedb": "rm -f ${DB:=bd.sqlite} && node src/util/updatedb.js",
         "doc": "node src/util/swagger.js",
-        "start": "npm run doc && npm run updatedb  && node src/server.js",
-        "startdev": "npm run doc && npm run updatedb && npx nodemon src/server.js",
+        "start": "npm run doc && DB_LOG=true npm run updatedb  && node src/server.js",
+        "startdev": "npm run doc && DB_LOG=true npm run updatedb && npx nodemon src/server.js",
         "startdev:proxyreact": "PROXYREACT=true npm run startdev", 
         "test": "npm run doc && DB=bdtest.sqlite npm run updatedb && DB=bdtest.sqlite jest --coverage"
     },
