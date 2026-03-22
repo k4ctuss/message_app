@@ -62,7 +62,6 @@ semgrep-security-report:
   script:
     - apk add gawk
     - apk add --no-cache python3 py3-pip
-    - python3 -m pip install --upgrade pip
     - pip3 install anybadge
     # Voir https://semgrep.dev/r pour la sélection des types d'analyse
     - 'semgrep --config "p/default" --config  "r/javascript" --config  "r/html" --config "r/css" --gitlab-sast -o gl-sast-semgrep-report.json  .'
