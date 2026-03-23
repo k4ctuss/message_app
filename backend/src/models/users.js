@@ -1,6 +1,7 @@
 const Sequelize = require('sequelize')
 const db = require('./database.js')
 const groups = require('./groups.js');
+const messages = require('./messages.js');
 const users = db.define('users', {
   id: {
     primaryKey: true,
@@ -52,4 +53,9 @@ users.addHook('beforeDestroy', async(user, options)=>{
 // association isMember    user n-----n group
 users.belongsToMany(groups, {through: 'isMember', as: 'groups'});
 groups.belongsToMany(users, {through: 'isMember', as: 'members'});
+
+// association posts    user 1-----n messsage
+users.hasMany(messages, { as:'messages'});
+messages.belongsTo(users, {as:'user'});
+
 module.exports = users

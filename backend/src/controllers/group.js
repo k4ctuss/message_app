@@ -34,19 +34,22 @@ module.exports = {
         if(!has(req.body, ['name'])) throw new CodeError('Group name not provided', status.BAD_REQUEST);
         const {name} = req.body; 
         const {user} = req;
-        const newGroup = await groupModel.create({name});
-        newGroup.setCreateOrOwn(user);
+        try{
+            const newGroup = await groupModel.create({name});
+            await newGroup.setCreateOrOwn(user);
+        }catch(e){
+            const message = e.errors[0].message=='name must be unique'? 'name already use':'insertion Error';
+            throw new CodeError(message, status.BAD_REQUEST);
+        }
         res.json({status:true, message: "Group added"});
     },
     async getMembers(req, res){
         // #swagger.tags = ['Groups']
         // #swagger.summary = 'Get All members of the group'
         const {user, group} = req;
-        let owner = await group.getCreateOrOwn({attributes:['id']});
-        owner = owner.get({plain:true});
-        let members = await group.getMembers({attributes:['id', 'email', 'name']});
-        members = members.map(m=>m.get({plain:true}));
-        if(!user.isAdmin && owner.id != user.id && !members.some(member=>member.id === user.id)){
+        const owner = await group.getCreateOrOwn({attributes:['id']});
+        const members = await group.getMembers({attributes:['id', 'email', 'name']});
+        if(!(user.isAdmin || owner.id == user.id || members.some(member=>member.id === user.id))){
             throw new CodeError('Forbidden', status.FORBIDDEN);
         }
         res.json({status: true, message:'Returning all members', members});
@@ -56,8 +59,7 @@ module.exports = {
         // #swagger.tags = ['Groups']
         // #swagger.summary = 'delete Group'
         const {user, group} = req;
-        let owner = await group.getCreateOrOwn({attributes:['id']});
-        owner = owner.get({plain:true});
+        const owner = await group.getCreateOrOwn({attributes:['id']});
         if(!user.isAdmin && owner.id != user.id){
             throw new CodeError('Forbidden', status.FORBIDDEN);
         }
@@ -72,8 +74,7 @@ module.exports = {
         const newMember = await userModel.findByPk(uid);
         if(!newMember) throw new CodeError('User id invalid', status.BAD_REQUEST);
         const {group, user} = req;
-        let owner = await group.getCreateOrOwn({attributes:['id']});
-        owner = owner.get({plain:true});
+        const owner = await group.getCreateOrOwn({attributes:['id']});
 
         if(!user.isAdmin && owner.id !== user.id) throw new CodeError('Forbidden', status.FORBIDDEN);
 
@@ -91,10 +92,8 @@ module.exports = {
         if(!member) throw new CodeError('User id invalid', status.BAD_REQUEST);
 
         const {group, user} = req;
-        let owner = await group.getCreateOrOwn({attributes:['id']});
-        let members = await group.getMembers({attributes:['id']});
-        owner = owner.get({plain:true});
-        members = members.map(m=>m.get({plain:true}));
+        const owner = await group.getCreateOrOwn({attributes:['id']});
+        const members = await group.getMembers({attributes:['id']});
 
         if(!(user.isAdmin || owner.id === user.id || uid == user.id && members.some(m=>m.id === user.id))) throw new CodeError('Forbidden', status.FORBIDDEN);
 

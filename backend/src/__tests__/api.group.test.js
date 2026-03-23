@@ -80,6 +80,14 @@ test('Test create groups', async ()=>{
     expect(response.statusCode).toBe(400);
     expect(response.body.message).toBe('Group name not provided');
 
+    // pas deux groupes du même nom
+    response = await request(app)
+        .post('/api/mygroups')
+        .set('x-access-token', chiefUserTK)
+        .send({name:"chief's group"});
+    expect(response.statusCode).toBe(400);
+    expect(response.body.message).toBe('name already use');
+
     response = await request(app)
         .get('/api/mygroups')
         .set('x-access-token', chiefUserTK);

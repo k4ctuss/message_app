@@ -23,6 +23,7 @@ router.use('/', (req, res, next) => {
 
 router.use('/', require('./user.js'));
 router.use('/', require('./group.js'));
+router.use('/', require('./message.js'));
 
 
 module.exports = router;
