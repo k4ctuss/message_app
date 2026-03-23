@@ -438,6 +438,10 @@
     },
     "/messages/{gid}": {
       "get": {
+        "tags": [
+          "Messages"
+        ],
+        "summary": "Get All messages of the group",
         "description": "",
         "produces": [
           "application/json"
@@ -467,6 +471,10 @@
         ]
       },
       "post": {
+        "tags": [
+          "Messages"
+        ],
+        "summary": "Create a message",
         "description": "",
         "produces": [
           "application/json"
@@ -482,11 +490,27 @@
             "name": "x-access-token",
             "in": "header",
             "type": "string"
+          },
+          {
+            "name": "obj",
+            "in": "body",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "content": {
+                  "type": "string",
+                  "example": "message content"
+                }
+              },
+              "required": [
+                "content"
+              ]
+            }
           }
         ],
         "responses": {
-          "default": {
-            "description": ""
+          "200": {
+            "description": "OK"
           }
         },
         "security": [

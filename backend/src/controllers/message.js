@@ -14,12 +14,16 @@ async function verifMembership(req, res, next){
 
 module.exports = {
     async getMessages(req, res){
+        // #swagger.tags = ['Messages']
+        // #swagger.summary = "Get All messages of the group"
         const {group} = req;
         const messages = await group.getMessages();
         res.json({status:true, message:'Return all messages', messages});
     },
     async newMessage(req, res){
-
+        // #swagger.tags = ['Messages']
+        // #swagger.summary = "Create a message"
+        // #swagger.parameters['obj'] = { in: 'body', schema: { $content: 'message content' }}
         if(!has(req.body, ['content'])) throw new CodeError('message content not provided', status.BAD_REQUEST);
         const {group, user} = req;
         try{
