@@ -1,5 +1,5 @@
 import './App.css'
-import {Login} from '@/views/Login';
+import {Connection} from '@/views/Connection';
 import { Accueil } from '@/views/Accueil';
 import { AuthContextProvider, useAuth } from '@/contexts/AuthContext';
 
@@ -9,7 +9,7 @@ function AppContent() {
   return (
     <div className="flex min-h-svh w-full items-center justify-center p-6 md:p-10">
       <div className="w-full max-w-sm">
-        {isConnected() ? <Accueil /> : <Login />}
+        {isConnected() ? <Accueil /> : <Connection />}
       </div>
     </div>
   );
