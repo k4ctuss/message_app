@@ -73,12 +73,12 @@ export function SignUpForm({registerCallback}){
                             <Input id="name" type="text" placeholder="votre nom" value={name} required onChange={(e)=>{setName(e.target.value); setFormError("");}}/>
                         </Field>
                         <Field>
-                            <FieldLabel htmlFor="email">Email</FieldLabel>
-                            <Input id="email" type="email" placeholder="mail@example.fr" value={email} required onChange={(e)=>{setEmail(e.target.value); setFormError("");}}/>
+                            <FieldLabel htmlFor="emailSignUp">Email</FieldLabel>
+                            <Input id="emailSignUp" type="email" placeholder="mail@example.fr" value={email} required onChange={(e)=>{setEmail(e.target.value); setFormError("");}}/>
                         </Field>
                         <Field>
-                            <FieldLabel htmlFor="password">Mot de passe</FieldLabel>
-                            <Input id="password" type="password" value={passwords[0]} required onChange={(e)=>{handlePasswordChange(e.target.value, 0)}}/>
+                            <FieldLabel htmlFor="passwordSignUp">Mot de passe</FieldLabel>
+                            <Input id="passwordSignUp" type="password" value={passwords[0]} required onChange={(e)=>{handlePasswordChange(e.target.value, 0)}}/>
                         </Field>
                         <Field>
                             <FieldLabel htmlFor="passwordVerif">Confimer votre Mot de passe</FieldLabel>

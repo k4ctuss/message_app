@@ -57,12 +57,12 @@ export function LoginForm({registerEmail=""}){
           <FieldLegend>Se Connecter</FieldLegend>
           <FieldGroup>
             <Field>
-              <FieldLabel htmlFor="email">Email</FieldLabel>
-              <Input  id="email" type="email" placeholder="mail@example.fr" value={email} required onChange={(e)=>{setEmail(e.target.value); setFormError("");}}/>
+              <FieldLabel htmlFor="emailLogin">Email</FieldLabel>
+              <Input  id="emailLogin" type="email" placeholder="mail@example.fr" value={email} required onChange={(e)=>{setEmail(e.target.value); setFormError("");}}/>
             </Field>
             <Field>
-              <FieldLabel htmlFor="password">Mot de Passe</FieldLabel>
-              <Input ref={pswdRef} id="password" type="password" value={password} required onChange={(e)=>{setPassword(e.target.value); setFormError("");}}/>
+              <FieldLabel htmlFor="passwordLogin">Mot de Passe</FieldLabel>
+              <Input ref={pswdRef} id="passwordLogin" type="password" value={password} required onChange={(e)=>{setPassword(e.target.value); setFormError("");}}/>
             </Field>
             <Button type="button" disabled={!email || !password} onClick={handleLogin}>{loading?"connection...":"OK"}</Button>
           </FieldGroup>

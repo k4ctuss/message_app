@@ -78,7 +78,7 @@ export function AuthContextProvider({children}){
     },[])
 
     const isConnected = useCallback(()=>{
-        return state.token !== "";
+        return state.token && state.token !== "";
     }, [state.token]);
 
     const value = useMemo(()=>({
