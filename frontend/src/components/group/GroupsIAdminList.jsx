@@ -1,13 +1,14 @@
 import { useGroups } from "@/hooks/useGroups";
-import { Skeleton } from "@/components/ui/skeleton"
+import { Skeleton } from "@/components/ui/skeleton";
+import { CreateGroup } from "./CreateGroup";
 
 
 export function GroupsIAdminList(){
-    const {groups, error, loading} = useGroups("admin");
+    const {groups, error, loading, createGroup} = useGroups("admin");
 
     return(
         <div className="flex flex-col w-full">
-            <h2 className="text-base">Ceux dont je suis membre</h2>
+            <h2 className="text-base">Ceux que j'administre</h2>
             <ul className="ml-6 list-disc [&>li]:mt-2">
                 {loading ? (
                     Array.from({ length: 3 }).map((_, index) => (
@@ -22,6 +23,7 @@ export function GroupsIAdminList(){
                 }))}
             </ul>
             {error && <p className="text-red-500">Erreur: {error}</p>}
+            <CreateGroup createGroup={createGroup}/>
         </div>
     );
 
