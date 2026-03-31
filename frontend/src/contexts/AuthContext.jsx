@@ -1,6 +1,8 @@
-import { createContext, useCallback, useContext, useMemo, useReducer } from "react";
+import { createContext, useCallback, useContext, useMemo, useReducer, useEffect } from "react";
+import { setCookie, getCookie } from "@/lib/utils";
 
 const API_URL = import.meta.env.VITE_API_URL;
+const AUTH_COOKIE = "ACCESS_TOKEN_AUTH";
 
 const initialState = {
     token: "",
@@ -13,11 +15,14 @@ function authReducer(state, action){
         case "SET_LOADING":
             return { ...state, loading: true };
         case "LOGIN_SUCCESS":
+            setCookie(AUTH_COOKIE, JSON.stringify({token:action.payload.token, user: action.payload.user}), 1000*60*60*24*7);
             return { ...state, token: action.payload.token, user: action.payload.user, loading: false};
         case "SIGNUP_SUCCESS":
             return { ...state, loading: false };
         case "REQUEST_FAILED":
             return { ...state, loading: false };
+        case "LOGOUT":
+            return { ...state, token: "", user: null };
         default:
 			return state;
     }
@@ -81,12 +86,30 @@ export function AuthContextProvider({children}){
         return state.token && state.token !== "";
     }, [state.token]);
 
+    const checkAuth = useCallback(()=>{
+        const {token, user} = JSON.parse(getCookie(AUTH_COOKIE) || "{}");
+        if(!token || !user) return;
+        dispatch({type:"LOGIN_SUCCESS",payload: {token: token, user: user }});
+    },[]);
+
+    const logout = useCallback(()=>{
+        setCookie(AUTH_COOKIE, "", -1);
+        dispatch({type: "LOGOUT"});
+    },[]);
+
+    // useEffect for checkAuth on mount
+    useEffect(()=>{
+        checkAuth();
+    }, [checkAuth]);
+
     const value = useMemo(()=>({
         ...state,
         login,
         signUp,
-        isConnected
-    }), [state, login, isConnected, signUp]);
+        isConnected, 
+        checkAuth,
+        logout
+    }), [state, login, isConnected, signUp, checkAuth, logout]);
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
