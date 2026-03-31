@@ -33,9 +33,10 @@ module.exports = {
         // #swagger.parameters['obj'] = { in: 'body', schema: { $name: 'myGroupName' }}
         if(!has(req.body, ['name'])) throw new CodeError('Group name not provided', status.BAD_REQUEST);
         const {name} = req.body; 
+        if(!name || name.trim() === "") throw new CodeError('Group name invalid', status.BAD_REQUEST);
         const {user} = req;
         try{
-            const newGroup = await groupModel.create({name});
+            const newGroup = await groupModel.create({name: name.trim()});
             await newGroup.setCreateOrOwn(user);
         }catch(e){
             const message = e.errors[0].message=='name must be unique'? 'name already use':'insertion Error';
