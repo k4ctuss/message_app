@@ -52,7 +52,7 @@ beforeAll(async()=>{
         const usersResp = await request(app)
             .get('/api/users')
             .set('x-access-token', adminTK);
-        const usersByMail = usersResp.body.data.reduce((acc, u) => {
+        const usersByMail = usersResp.body.users.reduce((acc, u) => {
             acc[u.email] = u;
             return acc;
         }, {});

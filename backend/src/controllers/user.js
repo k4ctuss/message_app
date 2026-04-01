@@ -64,8 +64,8 @@ module.exports = {
   async getUsers (req, res) {
     // #swagger.tags = ['Users']
     // #swagger.summary = 'Get All users'
-    const data = await userModel.findAll({ attributes: ['id', 'name', 'email'] })
-    res.json({ status: true, message: 'Returning users', data })
+    const users = await userModel.findAll({ attributes: ['id', 'name', 'email'] })
+    res.json({ status: true, message: 'Returning users', users })
   },
   async updateUser (req, res) {
     // TODO : verify if the token is valid and correspond to an admin

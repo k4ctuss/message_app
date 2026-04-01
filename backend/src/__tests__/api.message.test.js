@@ -33,7 +33,7 @@ beforeAll(async () => {
 	response = await request(app)
 		.get('/api/users')
 		.set('x-access-token', adminTK);
-	const outsiderUser = response.body.data.find(u => u.email === outsiderCreds.email);
+	const outsiderUser = response.body.users.find(u => u.email === outsiderCreds.email);
 	const outsiderUserId = outsiderUser.id;
 
 	response = await request(app)

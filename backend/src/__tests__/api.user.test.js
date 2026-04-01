@@ -12,7 +12,7 @@ test('Test if user can log in and list users', async () => {
     .set('x-access-token', response.body.token)
   expect(response.statusCode).toBe(200)
   expect(response.body.message).toBe('Returning users')
-  expect(response.body.data.length).toBeGreaterThan(0)
+  expect(response.body.users.length).toBeGreaterThan(0)
 })
 
 test('Test user sign up', async () => {
