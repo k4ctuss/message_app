@@ -1,4 +1,5 @@
 const messagesModel = require('../models/messages');
+const usersModel = require('../models/users');
 const CodeError = require('../util/CodeError');
 
 const status = require('http-status');
@@ -17,7 +18,7 @@ module.exports = {
         // #swagger.tags = ['Messages']
         // #swagger.summary = "Get All messages of the group"
         const {group} = req;
-        const messages = await group.getMessages();
+        const messages = await group.getMessages({include:[{model: usersModel, as:'user', attributes:['id', 'name']}]});
         res.json({status:true, message:'Return all messages', messages});
     },
     async newMessage(req, res){
