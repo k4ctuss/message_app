@@ -5,7 +5,7 @@ import { useState } from "react";
 export function Connection(){
     const [registerEmail, setRegisterEmail] = useState("");
     return (
-        <div className="flex flex-col gap-16">
+        <div className="flex flex-col gap-16 max-w-sm">
             <LoginForm registerEmail={registerEmail}/>
             <SignUpForm registerCallback={setRegisterEmail}/>
         </div>

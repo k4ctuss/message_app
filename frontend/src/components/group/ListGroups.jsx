@@ -7,12 +7,12 @@ import { Separator } from "@/components/ui/separator";
 export function ListGroups(){
 
     return(
-        <Card>
+        <Card className="md:min-w-sm">
             <CardHeader>
-                 <CardTitle>Mes Groupes</CardTitle>
+                <CardTitle>Mes Groupes</CardTitle>
             </CardHeader>
             <CardContent>
-                <div className="flex flex-col items-center p-4 gap-6">
+                <div className="flex flex-col items-center lg:p-4 gap-6">
                     <GroupsIMemberList/>
                     <Separator/>
                     <GroupsIAdminList/>

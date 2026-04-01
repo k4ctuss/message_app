@@ -1,6 +1,7 @@
 import { useGroups } from "@/hooks/useGroups";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CreateGroup } from "./CreateGroup";
+import { Link } from "react-router-dom";
 
 
 export function GroupsIAdminList(){
@@ -16,9 +17,9 @@ export function GroupsIAdminList(){
                     ))
                 )
                 :
-                (groups.map((group, index)=>{
+                (groups.map((group)=>{
                     return(
-                        <li key={index}> {group.name}</li>
+                        <li key={group.id}><Link to={`/groups/${group.id}`}>{group.name}</Link></li>
                     );
                 }))}
             </ul>
