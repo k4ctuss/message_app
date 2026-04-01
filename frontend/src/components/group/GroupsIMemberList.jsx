@@ -1,6 +1,9 @@
 import { useGroups } from "@/hooks/useGroups";
 import { Skeleton } from "@/components/ui/skeleton"
 
+import { Link } from "react-router-dom";
+
+
 
 export function GroupsIMemberList(){
     const {groups, error, loading} = useGroups("member");
@@ -17,7 +20,7 @@ export function GroupsIMemberList(){
                 :
                 (groups.map((group, index)=>{
                     return(
-                        <li key={index}> {group.name}</li>
+                        <li key={index}> <Link to={`/discussion/${group.id}/${group.name}`}>{group.name}</Link></li>
                     );
                 }))}
             </ul>
