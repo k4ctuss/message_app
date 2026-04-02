@@ -28,7 +28,7 @@ export function useDiscussion(gid){
             }
 
             const options = {
-                method:'get',
+                method:'GET',
                 headers:{'x-access-token':token}
             };
             const response = await fetch(`${API_URL}/api/messages/${gid}`, options);
@@ -48,15 +48,57 @@ export function useDiscussion(gid){
 
     },[gid, token]);
 
+    const addMessage = useCallback(async(content)=>{
+        if(!gid || !Number.isInteger(Number(gid))){
+            setError("groupe invalid");
+            setMessages([])
+            return;
+        }
+
+        try{
+            setError(null);
+            setIsRefetching(true);
+
+            const options = {
+                method:'POST',
+                headers:{'x-access-token':token, 'content-type':'application/json'},
+                body: JSON.stringify({content:content})
+            };
+            const response = await fetch(`${API_URL}/api/messages/${gid}`, options);
+            if(response.ok){
+                await fetchMessages();
+            }else{
+                const err = await response.json();
+                setMessages(err.message);
+            }
+        }catch(err){
+            console.error(err);
+            setError(err.messages || "Error lors du chargement de la discussion");
+        }finally{
+            setIsRefetching(false);
+        }
+
+    },[gid, token, fetchMessages]);
+
     useEffect(()=>{
-        fetchMessages();
+        fetchMessages(); // premier chargement
+
+        // recherge toutes les 5 secondes
+        const id = setInterval(()=>{
+            console.log("fetch discussion");
+            fetchMessages();
+        },5000);
+
+        // clean up
+        return () => clearInterval(id);
     },[fetchMessages]);
 
     return {
         isLoading,
         isRefetching,
         error,
-        messages
+        messages,
+        addMessage
     }
 
 }

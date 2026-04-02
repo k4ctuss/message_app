@@ -1,5 +1,5 @@
 import { useParams } from "react-router-dom";
-import { Fragment } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import {
     Card,
     CardHeader,
@@ -8,13 +8,33 @@ import {
 } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Field } from "@/components/ui/Field";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+
+import { Spinner } from "@/components/ui/spinner";
 import { useDiscussion } from "@/hooks/useDiscussion";
 import { useAuth } from "@/contexts/AuthContext";
+import { SendHorizontal } from "lucide-react";
 
 export function Discussion(){
     const {user} = useAuth();
     const params = useParams();
-    const {messages, isLoading, error} = useDiscussion(params.gid);
+    const {messages, isLoading, error, addMessage, isRefetching} = useDiscussion(params.gid);
+    const [newMessage, setNewMessage] = useState("");
+    const scrollRef = useRef(null);
+
+    function handleAddMessage(){
+        if(!newMessage || newMessage.trim() ==="") return;
+        addMessage(newMessage.trim());
+        setNewMessage("");
+    }
+
+    useEffect(()=>{
+        if(scrollRef.current){
+            scrollRef.current.scrollIntoView({behavior:"smooth"});
+        }
+    },[messages]);
 
     if (error){
         return  <p className="text-red-500">Erreur: {error || "Discussion non trouvé"}</p>
@@ -40,11 +60,11 @@ export function Discussion(){
                             messages.map((m,i)=>(
                                 <Fragment key={i}>
                                     {m.user.id == user.id ? (
-                                        <div key={m.id} className="flex items-end justify-end">
+                                        <div key={m.id} className="flex items-end justify-end" ref={i === messages.length-1?scrollRef:null}>
                                             <span className="border rounded-2xl py-2 px-4 bg-primary text-primary-foreground max-w-[70%]">{m.content}</span>
                                         </div>
                                     ) : (
-                                        <div key={m.id} className="flex items-end justify-between">
+                                        <div key={m.id} className="flex items-end justify-between" ref={i === messages.length-1?scrollRef:null}>
                                             <span className="border rounded-2xl py-2 px-4 max-w-[70%]">{m.content}</span>
                                             <span className="text-sm text-muted-foreground max-w-[30%]">{m.user.name}</span>
                                         </div>
@@ -54,6 +74,22 @@ export function Discussion(){
                         )}
                     </div>
                 </ScrollArea>
+                <Field
+                className="mt-4"
+                orientation="horizontal"
+                >
+                    <Input type="text" 
+                        value={newMessage} 
+                        onChange={e=>setNewMessage(e.target.value)}
+                        placeholder="Nouveau message"
+                    />
+                    <Button 
+                        disabled={!newMessage || isRefetching || isLoading} 
+                        onClick={()=>{handleAddMessage()}}
+                        className="rounded-full p-2"
+                    >{isRefetching?(<Spinner/>):(<SendHorizontal />)}
+                    </Button>
+                </Field>
             </CardContent>
         </Card>
     );
