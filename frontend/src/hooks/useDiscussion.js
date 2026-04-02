@@ -41,7 +41,7 @@ export function useDiscussion(gid){
             }
         }catch(err){
             console.error(err);
-            setError(err.messages || "Error lors du chargement de la discussion");
+            setError(err.message || "Error lors du chargement de la discussion");
         }finally{
             setIsLoading(false);
         }
