@@ -81,6 +81,21 @@ semgrep-security-report:
       - "*.badge.svg"
       - gl-sast-semgrep-report.json
 
+# Job pour mettre en ligne le frontend de production sur les pages du projet l'url de l'api n'est pas le bon
+# car il est relatif au backend
+pages: # Job de mise en ligne du frontend de production sur les pages du projet
+  stage: deploy
+  image: node
+  script:
+    - mkdir public # Création du répertoire du frontend de production
+    - cd frontend  # On se place dans le répertoire des sources du frontend
+    - npm i # On installe les paquets nécessaires
+    - npm run build # Et on génère les fichiers de production
+    - cp -rf dist/* ../public/ # Qui sont copiés dans le répertoire dédié
+  artifacts: # On précise que le répertoire des pages doit être conservé une fois le job terminé
+    paths:
+      - public
+
 # Job pour exposer l'API sur Scalingo
 # URL d'exposition de l'API : https://monAppliChezScalingo.osc-fr1.scalingo.io/
 scalingo:
@@ -109,6 +124,17 @@ scalingo:
     - scalingo keys-add dpl_tmp_key ~/.dpl/id_rsa.pub
     # Initialiser le dépôt scalingo distant (en forçant si ce n'est pas le première fois)
     - scalingo --app $SCALINGO_APP_NAME git-setup --remote scalingo-dpl --force
+    - curl https://raw.githubusercontent.com/creationix/nvm/master/install.sh | bash # Installation de nvm
+    - export NVM_DIR="$HOME/.nvm"
+    - \. "$NVM_DIR/nvm.sh"  
+    - \. "$NVM_DIR/bash_completion"
+    - nvm install node # Installe la dernière version de node
+    - nvm use node
+    - cd frontend # On se place dans le répertoire des sources du frontend
+    - npm i && npm run build && cp -rf dist/* ../backend/src/frontend # Pour générer la version de production du frontend
+    - git config --global user.email "$GITLAB_USER_EMAIL" # Configure git pour pouvoir pousser la version de production du frontend sur le dépot git de scalingo
+    - git config --global user.name "$GITLAB_USER_NAME"
+    - cd ../backend/src/frontend && git add . && git commit -m "MAJ frontend" # Ajoute les fichiers de production du frontend
     # Pousser la version du backend sur le dépôt scalingo (ce qui va provoquer son déploiement)
     - "GIT_SSH_COMMAND='ssh -o StrictHostKeyChecking=no -i ~/.dpl/id_rsa' git push scalingo-dpl HEAD:refs/heads/main -f"
     # Supprimer la clé temporaire ajoutée
