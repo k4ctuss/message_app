@@ -37,7 +37,7 @@ export function useDiscussion(gid){
                 setMessages(data.messages);
             }else{
                 const err = await response.json();
-                setMessages(err.message);
+                setError(err.message);
             }
         }catch(err){
             console.error(err);
