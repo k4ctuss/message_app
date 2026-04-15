@@ -94,6 +94,9 @@ export function AuthContextProvider({children}){
 
     const logout = useCallback(()=>{
         setCookie(AUTH_COOKIE, "", -1);
+        if (window.location.hash!=="") {
+            window.location.replace(window.location.pathname + window.location.search);
+        }
         dispatch({type: "LOGOUT"});
     },[]);
 
