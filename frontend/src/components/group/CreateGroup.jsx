@@ -11,6 +11,7 @@ export function CreateGroup({createGroup}){
             <Input type="text" 
                 placeholder="nom du nouveau groupe" 
                 className="w-full" value={newGroupName} 
+                onKeyDown={e=>{if(e.key === "Enter" && newGroupName) createGroup(newGroupName)}}
                 onChange={e=>setNewGroupName(e.target.value)}
             />
             <Button onClick={() => createGroup(newGroupName)} className="w-25" disabled={!newGroupName} >Créer</Button>

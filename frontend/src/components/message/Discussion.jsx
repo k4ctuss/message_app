@@ -20,13 +20,13 @@ import { SendHorizontal } from "lucide-react";
 export function Discussion(){
     const {user} = useAuth();
     const params = useParams();
-    const {messages, isLoading, error, addMessage, isRefetching} = useDiscussion(params.gid);
+    const {messages, isLoading, error, sendMessage, isRefetching} = useDiscussion(params.gid);
     const [newMessage, setNewMessage] = useState("");
     const scrollRef = useRef(null);
 
     function handleAddMessage(){
         if(!newMessage || newMessage.trim() ==="") return;
-        addMessage(newMessage.trim());
+        sendMessage(newMessage.trim());
         setNewMessage("");
     }
 
@@ -81,6 +81,7 @@ export function Discussion(){
                     <Input type="text" 
                         value={newMessage} 
                         onChange={e=>setNewMessage(e.target.value)}
+                        onKeyDown={e=>{if(e.key === "Enter") handleAddMessage()}}
                         placeholder="Nouveau message"
                     />
                     <Button 

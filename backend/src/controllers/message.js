@@ -30,7 +30,7 @@ module.exports = {
         try{
             await messagesModel.create({content:req.body.content, userId:user.id, groupId:group.id});
         }catch(e){
-            console.error(error);
+            console.error(e);
             throw new CodeError('insertion error', status.BAD_REQUEST);
         }
         res.json({status:true, message:'message added'});

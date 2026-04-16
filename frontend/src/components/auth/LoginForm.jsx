@@ -62,7 +62,11 @@ export function LoginForm({registerEmail=""}){
             </Field>
             <Field>
               <FieldLabel htmlFor="passwordLogin">Mot de Passe</FieldLabel>
-              <Input ref={pswdRef} id="passwordLogin" type="password" value={password} required onChange={(e)=>{setPassword(e.target.value); setFormError("");}}/>
+              <Input ref={pswdRef} id="passwordLogin" type="password" value={password} 
+              required 
+              onChange={(e)=>{setPassword(e.target.value); setFormError("");}}
+              onKeyDown={e=>{if(e.key === "Enter") handleLogin()}}
+              />
             </Field>
             <Button type="button" disabled={!email || !password} onClick={handleLogin}>{loading?"connection...":"OK"}</Button>
           </FieldGroup>

@@ -6,6 +6,7 @@ import { Discussion } from '@/components/message/Discussion';
 import { AuthContextProvider, useAuth } from '@/contexts/AuthContext';
 
 import {HashRouter as Router, Route, Routes} from "react-router-dom";
+import { SocketContextProvider } from './contexts/SocketContext';
 
 
 function AppContent() {
@@ -34,7 +35,9 @@ function App() {
 
   return (
     <AuthContextProvider>
-      <AppContent />
+      <SocketContextProvider>
+        <AppContent />
+      </SocketContextProvider>
     </AuthContextProvider>  )
 }
 

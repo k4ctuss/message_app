@@ -1,10 +1,12 @@
 import { useAuth } from "@/contexts/AuthContext";
+import { useSocket } from "@/contexts/SocketContext";
 import { useCallback, useEffect, useState } from "react";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
 export function useDiscussion(gid){
     const {token} = useAuth();
+    const {socket} = useSocket();
 
     const [messages, setMessages] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
@@ -69,7 +71,7 @@ export function useDiscussion(gid){
                 await fetchMessages();
             }else{
                 const err = await response.json();
-                setMessages(err.message);
+                setError(err.message);
             }
         }catch(err){
             console.error(err);
@@ -78,27 +80,54 @@ export function useDiscussion(gid){
             setIsRefetching(false);
         }
 
-    },[gid, token, fetchMessages]);
+    },[gid, token]);
+
+    const sendMessage = useCallback((content)=>{
+
+        if(!socket || !gid || !Number.isInteger(Number(gid))){
+            setError("groupe invalid ou serveur inaccessible");
+            return;
+        }
+        socket.emit('newMessage', {gid, content}, (res)=>{
+            if(res.status === "NOK")
+                setError(res.message);
+            else
+                setError(null);
+        });
+
+    },[socket, gid]);
+
+    function handlerReceiveMessage(message){
+        console.log("received", message);
+        setMessages(prev=>[...prev, message]);
+    }
 
     useEffect(()=>{
         fetchMessages(); // premier chargement
+        console.log(socket);
+        if(socket){
+            socket.emit('joinDiscussion', gid);
 
-        // recherge toutes les 5 secondes
-        const id = setInterval(()=>{
-            console.log("fetch discussion");
-            fetchMessages();
-        },5000);
+            socket.on('receivedMessage', handlerReceiveMessage);
 
-        // clean up
-        return () => clearInterval(id);
-    },[fetchMessages]);
+
+            // clean up
+            return () => {
+                socket.off('receivedMessage', handlerReceiveMessage);
+                socket.emit('leaveDiscussion', gid);
+            }
+        }
+
+        
+    },[fetchMessages, socket]);
 
     return {
         isLoading,
         isRefetching,
         error,
         messages,
-        addMessage
+        addMessage,
+        sendMessage
     }
 
 }
