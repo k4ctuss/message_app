@@ -18,6 +18,12 @@ export function SocketContextProvider({children}){
         newSocket.on('connect', () => {
             console.log('Socket connected:', newSocket.id);
         });
+        newSocket.onAny((eventName, ...args) => {
+            console.log("[IN]", eventName, ...args);
+        });
+        newSocket.onAnyOutgoing((eventName, ...args) => {
+            console.log("[OUT]", eventName, ...args);
+        });
 
         setSocket(newSocket);
         return ()=>{

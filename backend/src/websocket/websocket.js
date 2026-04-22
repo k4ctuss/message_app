@@ -7,6 +7,8 @@ const groupsModel = require('../models/groups');
 
 const { TOKENSECRET } = process.env;
 
+
+// utils functions
 function verifyToken(token) {
   if (!token) {
     throw new CodeError('Token missing', 403);
@@ -19,6 +21,18 @@ function verifyToken(token) {
   return jws.decode(token).payload;
 }
 
+// check if socket's user Exist
+async function isUserExist(id){
+    return !!await usersModel.findByPk(id);
+}
+
+// return group based on group id
+async function loadGroup(gid){
+    return await groupsModel.findByPk(gid);
+}
+
+
+// set up the web socket
 function initWebSocket(io){
     io.use((socket, next)=>{
         try{
@@ -34,8 +48,26 @@ function initWebSocket(io){
         }
     });
     
-    io.on('connection', (socket)=>{
+    io.on('connection', async (socket)=>{
+
+        //DEBUGING 
+        socket.onAnyOutgoing((eventName, ...args) => {
+            console.log(`[#${socket.id}] [OUT]`, eventName, ...args);
+        });
+        socket.onAny((eventName, ...args) => {
+            console.log(`[#${socket.id}] [IN]`, eventName, ...args);
+        });
+
+        //// LOGIG 
         console.log(`User ${socket.data.login} connected`);
+        socket.data.user = await usersModel.findOne({where:{email:socket.data.login}, attributes:['id', 'name', 'isAdmin']});
+        socket.join(socket.data.user.id);
+
+        // add to admin if need
+        if(socket.data.user.isAdmin){
+            socket.join(`adminMember`);
+            console.log(`User ${socket.data.login} is Admin`);
+        }
         
         socket.on('joinDiscussion', (gid)=>{
             socket.join(`discussion_${gid}`);
@@ -85,6 +117,58 @@ function initWebSocket(io){
             }catch(e){
                 callback({status:"NOK", message:"Error on message creation"});
             }
+        });
+
+
+        // ------- groups ---------- //
+        // ajout d'un membre
+        socket.on('addMember', async(data, callback)=>{
+            if(!await isUserExist(socket.data.user.id)){
+                return callback({status: 'NOK', message:'Access Forbidden'});
+            }
+            const {gid, uid} = data;
+            // load the group;
+            const group = await loadGroup(gid);
+            if(!group) return callback({status: 'NOK', message:'Group not found'});
+            // check uid
+            if(!uid) return callback({status:'NOK', message:'User id not provided'});
+
+            const newMember = await usersModel.findByPk(uid);
+            if(!newMember) return callback({status:'NOK', message:'User id invalid'});
+            const owner = await group.getCreateOrOwn({attributes:['id']});
+            if(!socket.data.user.isAdmin && owner.id !== socket.data.user.id) return callback({status: 'NOK', message:'Forbidden'});
+            await group.addMember(newMember);
+
+            // send group to the new member 
+            io.to(newMember.id).emit('addedToGroup_member', group);
+            
+            callback({status:'OK', message:'member added'});
+        });
+
+        // suppression d'un membre
+        socket.on('deleteMember', async(data, callback)=>{
+            if(!await isUserExist(socket.data.user.id)){
+                return callback({status: 'NOK', message:'Access Forbidden'});
+            }
+            const {gid, uid} = data;
+            // load the group;
+            const group = await loadGroup(gid);
+            if(!group) return callback({status: 'NOK', message:'Group not found'});
+            // check uid
+            if(!uid) return callback({status:'NOK', message:'User id not provided'});
+            const member = await usersModel.findByPk(uid);
+            if(!member) return callback({status:'NOK', message:'User id invalid'});
+
+            const owner = await group.getCreateOrOwn({attributes:['id']});
+            const members = await group.getMembers({attributes:['id']});
+            const {user} = socket.data;
+            if (!(user.isAdmin || owner.id === user.id || uid == user.id && members.some(m=>m.id === user.id))) return callback({status: 'NOK', message:'Forbidden'});
+            await group.removeMember(uid);
+
+            // ask member to remove group from its list
+            io.to(member.id).emit('deleteGroup_member', group);
+            
+            callback({status:'OK', message:'member deleted'});
         });
     });
 }

@@ -12,7 +12,7 @@ import { Separator } from "../ui/separator";
 export function AdminGroup(){
     let params = useParams();
     const gid = params.gid;
-    const {group, error, loading, addMember, deleteMember} = useManageGroup(gid);
+    const {group, error, loading, addMember, deleteMember, addMemberWS, deleteMemberWS} = useManageGroup(gid);
     const [addMemberId, setAddMemberId] = useState(null);
 
     return(
@@ -65,9 +65,9 @@ export function AdminGroup(){
                                     </Select>
                                     <Button
                                         disabled={!addMemberId || loading}
-                                        onClick={async()=>{
+                                        onClick={()=>{
                                             setAddMemberId(null);
-                                            await addMember(addMemberId);
+                                            addMemberWS(addMemberId);
                                         }}
                                     >
                                         Ajouter
@@ -84,7 +84,7 @@ export function AdminGroup(){
                                             <Button
                                                 variant="destructive"
                                                 disabled={loading}
-                                                onClick={async()=>{ await deleteMember(member.id); }}
+                                                onClick={()=>{deleteMemberWS(member.id);}}
                                             >
                                                 Supprimer
                                             </Button>

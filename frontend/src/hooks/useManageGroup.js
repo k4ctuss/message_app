@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useSocket } from "@/contexts/SocketContext";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
 export function useManageGroup(gid){
     const {token} = useAuth();
+    const {socket} = useSocket();
 
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
@@ -96,6 +98,32 @@ export function useManageGroup(gid){
         await manageMember("delete", memberId);
     }, [manageMember]);
 
+    const addMemberWS = useCallback((memberId)=>{
+        if(!socket) return;
+        socket.emit('addMember', {gid, uid: memberId}, (res)=>{
+            if(res.status == 'NOK')
+                setError(res.message);
+            else{
+                setError(null);
+                fetchGroup();
+            }
+        });
+
+    },[gid, socket])
+    
+    const deleteMemberWS = useCallback((memberId)=>{
+        if(!socket) return;
+        socket.emit('deleteMember', {gid, uid: memberId}, (res)=>{
+            if(res.status == 'NOK')
+                setError(res.message);
+            else{
+                setError(null);
+                fetchGroup();
+            }
+        });
+
+    },[gid, socket])
+
 
     useEffect(()=>{
         fetchGroup();
@@ -107,6 +135,8 @@ export function useManageGroup(gid){
         group,
         addMember,
         deleteMember,
+        addMemberWS,
+        deleteMemberWS
     }
 
 }

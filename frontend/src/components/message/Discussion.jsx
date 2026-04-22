@@ -1,10 +1,11 @@
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { Fragment, useEffect, useRef, useState } from "react";
 import {
     Card,
     CardHeader,
     CardContent,
-    CardTitle
+    CardTitle,
+    CardAction
 } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -15,14 +16,26 @@ import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { useDiscussion } from "@/hooks/useDiscussion";
 import { useAuth } from "@/contexts/AuthContext";
+import { useSocket } from "@/contexts/SocketContext";
 import { SendHorizontal } from "lucide-react";
 
 export function Discussion(){
     const {user} = useAuth();
+    const {socket} = useSocket();
+    const navigate = useNavigate();
     const params = useParams();
     const {messages, isLoading, error, sendMessage, isRefetching} = useDiscussion(params.gid);
     const [newMessage, setNewMessage] = useState("");
     const scrollRef = useRef(null);
+
+    function leaveGroup(){
+        if(socket){
+            socket.emit('deleteMember', {gid:params.gid, uid: user.id}, (res)=>{
+                if(res.status == 'NOK') console.log(res.messages);
+                else navigate('/');
+            });
+        }
+    }
 
     function handleAddMessage(){
         if(!newMessage || newMessage.trim() ==="") return;
@@ -43,6 +56,7 @@ export function Discussion(){
         <Card className="md:w-sm">
             <CardHeader>
                 <CardTitle>Discussion dans le groupe {isLoading?(<Skeleton className="h-4 w-25"/>):(params?.name)}</CardTitle>
+                <CardAction><Button variant="destructive" onClick={()=>leaveGroup()} >Leave group</Button></CardAction>
             </CardHeader>
             <CardContent>
                 <ScrollArea

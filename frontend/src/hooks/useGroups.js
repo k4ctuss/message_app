@@ -1,4 +1,5 @@
 import { useAuth } from "@/contexts/AuthContext";
+import { useSocket } from "@/contexts/SocketContext";
 import { useCallback, useEffect, useState } from "react";
 
 const API_URL = import.meta.env.VITE_API_URL;
@@ -6,6 +7,7 @@ const API_URL = import.meta.env.VITE_API_URL;
 
 export function useGroups(type = "member"){
     const {token} = useAuth();
+    const {socket} = useSocket();
 
     const [groups, setGroups] = useState([]);
     const [error, setError] = useState(null);
@@ -54,16 +56,32 @@ export function useGroups(type = "member"){
         }
     },[token, fetchGroups]);
 
+    function addGroup(group){
+        setGroups(prev=>[...prev, group]);
+    }
+
+    function deleteGroup(group){
+        console.log("delete group");
+        setGroups(prev=>prev.filter(g=>g.id!== group.id));
+    }
 
 
     useEffect(()=>{
         fetchGroups();
-    },[fetchGroups]);
+        if(socket){
+            socket.on(`addedToGroup_${type}`, addGroup);
+            socket.on(`deleteGroup_${type}`, deleteGroup);
+            return ()=>{
+                socket.off(`addedToGroup_${type}`, addGroup);
+                socket.off(`deleteGroup_${type}`, deleteGroup);
+            };
+        }
+    },[fetchGroups, socket]);
 
     return{
         groups, 
         error,
         loading,
-        createGroup
+        createGroup,
     };
 }
