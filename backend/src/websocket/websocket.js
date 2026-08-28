@@ -69,9 +69,22 @@ function initWebSocket(io){
             console.log(`User ${socket.data.login} is Admin`);
         }
         
-        socket.on('joinDiscussion', (gid)=>{
+        socket.on('joinDiscussion', async (gid, callback)=>{
+            const user = socket.data.user;
+            const group = await loadGroup(gid);
+
+            if(!user || !group || !await group.hasMember(user)){
+                if(typeof callback === 'function'){
+                    callback({status:'NOK', message:'Forbidden'});
+                }
+                return;
+            }
+
             socket.join(`discussion_${gid}`);
             console.log(`User ${socket.data.login} joined discussion ${gid}`);
+            if(typeof callback === 'function'){
+                callback({status:'OK'});
+            }
         });
     
         socket.on('leaveDiscussion', (gid)=>{
@@ -164,6 +177,9 @@ function initWebSocket(io){
             const {user} = socket.data;
             if (!(user.isAdmin || owner.id === user.id || uid == user.id && members.some(m=>m.id === user.id))) return callback({status: 'NOK', message:'Forbidden'});
             await group.removeMember(uid);
+
+            // Ensure all active sockets for this user leave the discussion room immediately.
+            io.in(String(member.id)).socketsLeave(`discussion_${gid}`);
 
             // ask member to remove group from its list
             io.to(member.id).emit('deleteGroup_member', group);
