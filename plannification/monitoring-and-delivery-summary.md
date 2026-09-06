@@ -46,7 +46,7 @@ Migration en cours : remote GitLab → GitHub effectuée, la CI GitLab n'a pas e
 - Durée de vie : permanente.
 - Infra : **strictement le même module Terraform que la prod**, juste une variable d'environnement différente (même taille de VM, mêmes conteneurs).
 - BDD : Postgres conteneurisé, données anonymisées/synthétiques.
-- Tests : **E2E complets (Cypress)** — parcours utilisateur réels contre l'app déployée, écriture/lecture réelle en base, nettoyage des données de test à la fin (fixtures/teardown).
+- Tests : **E2E complets (Cypress)**, en deux temps — (1) **avant merge**, contre une stack éphémère locale au job CI (`docker-compose up` directement dans le runner, pas sur l'infra cloud) pour valider le code de la PR sans toucher à l'infra partagée ni créer de conflit entre PR concurrentes ; (2) **après merge**, rejoués contre la VM staging réellement déployée, pour valider l'environnement (réseau, secrets, config cloud), avec nettoyage des données de test à la fin.
 - Accès manuel : SSH tunnel permanent (`ssh -L 8080:localhost:80 ...`), **pas d'exposition publique du port 80/443** — security group Terraform n'ouvre que le port 22.
 - Monitoring : léger (juste `/health`, pas la stack complète).
 - Hébergement : **[À trancher]** — Azure (B1S, dans le quota gratuit puisque c'est le seul VM sur ce compte) ou Oracle Cloud Always Free (VM ARM, gratuit sans limite de durée). Les deux évitent de cumuler avec le quota AWS déjà utilisé par prod+dev.
@@ -58,7 +58,7 @@ Migration en cours : remote GitLab → GitHub effectuée, la CI GitLab n'a pas e
 - BDD : Postgres conteneurisé, données réelles.
 - Tests post-déploiement : **tests de fumée** uniquement — non-destructifs (`/health`, vérifier que les pages clés répondent). Jamais de test qui écrit en prod.
 - Accès manuel : HTTP public (80/443, TLS) + SSH restreint pour l'admin.
-- Monitoring : **complet** — Prometheus + Grafana + (Alertmanager + node-exporter + cAdvisor), tous sur la même VM que l'app (docker-compose).
+- Monitoring : **complet** — Prometheus + Grafana + Alertmanager + node-exporter + cAdvisor, tous sur la même VM que l'app (docker-compose).
 - Hébergement : AWS.
 
 ### 3.5 Tableau récapitulatif
@@ -80,6 +80,10 @@ Migration en cours : remote GitLab → GitHub effectuée, la CI GitLab n'a pas e
 - **`cd-staging.yml`** — sur merge/PR vers `main` : déploiement sur la VM staging persistante → tests E2E Cypress → nettoyage des données de test.
 - **`cd-prod.yml`** — sur tag/release, avec **approbation manuelle** (environment protection rule GitHub) : build/push image → mise à jour de la stack sur la VM prod → tests de fumée.
 
+### Stratégie "build once, deploy many"
+
+Principe explicite à documenter dans le rapport : l'image Docker est construite **une seule fois** au moment du merge vers `main`, taguée (SHA du commit ou semver), poussée vers un registre (GHCR). Elle est déployée telle quelle sur staging via `docker compose pull` + `up -d`. Au moment de la release, **on ne rebuild rien** : on promeut la même image, déjà validée sur staging, vers la VM prod. Ce qui tourne en prod est donc bit-à-bit ce qui a été testé, jamais un nouveau build à partir du même code source.
+
 ## 5. Infrastructure as Code (Terraform)
 
 - Un module Terraform réutilisable : VM, security group, réseau — variabilisé par environnement (`dev`, `staging`, `prod`).
@@ -94,6 +98,12 @@ Migration en cours : remote GitLab → GitHub effectuée, la CI GitLab n'a pas e
 - Sequelize permet de changer de dialecte sans réécrire la logique métier — argument clé pour justifier la différenciation d'environnements dans le rapport.
 - **Local** : SQLite (fichier, rapide, zéro dépendance).
 - **Dev/Staging/Prod** : PostgreSQL conteneurisé (pas de RDS, pour éviter un second quota free tier à gérer en parallèle de l'EC2).
+
+### Migrations entre versions
+
+Le conteneur de BDD n'est pas reconstruit à chaque déploiement — seule l'image de l'app change. Les données vivent dans un **volume Docker** découplé du cycle de vie du conteneur, donc recréer/mettre à jour le conteneur Postgres ne touche pas aux données. Le schéma évolue via des **migrations versionnées Sequelize** (`sequelize-cli migration:generate` / `db:migrate`), suivies dans une table `SequelizeMeta` pour garantir qu'une migration n'est appliquée qu'une seule fois. La migration s'exécute comme une étape explicite du pipeline de déploiement (ex. `docker compose run --rm backend npx sequelize-cli db:migrate`) avant ou juste après le redémarrage de l'app.
+
+Limite à documenter dans le rapport : pour un déploiement parfaitement sans coupure, une migration devrait rester compatible avec l'ancienne version de l'app pendant la fenêtre de redémarrage (ex. ne pas supprimer une colonne encore utilisée) — risque faible ici vu la taille du projet, mais bon réflexe à mentionner.
 
 ## 7. Qualité et sécurité
 
@@ -131,7 +141,16 @@ Structure prévue :
 - [Comparatif des free tiers cloud](https://github.com/cloudcommunity/Cloud-Free-Tier-Comparison) — à citer dans le rapport pour justifier le choix des providers.
 - [Playlist DevOps Crash Course (Docker, Terraform, GitHub Actions)](https://www.classcentral.com/classroom/youtube-devops-crash-course-docker-terraform-and-github-actions-109153)
 
-## 12. Points encore ouverts
+## 13. Décisions sur les zones de flou
+
+- **TLS/HTTPS** : hors scope, assumé explicitement comme limite dans le rapport (pas de nom de domaine/certificat prévu pour ce projet).
+- **Secrets** : AWS SSM Parameter Store en priorité (gratuit, intégrable via Terraform) ; repli sur `.env` (gitignoré) + GitHub Actions Secrets si le temps manque.
+- **Alerting (Alertmanager → Discord/Slack/email)** : stretch goal, pas bloquant pour la validation du projet.
+- **Rollback** : rollback applicatif prévu (redéploiement du tag précédent, simple grâce au pattern build-once) ; rollback de schéma BDD **laissé ouvert**, documenté comme limite assumée plutôt que résolu à moitié.
+- **Concurrence sur staging** : résolue par le découpage de la validation E2E en deux temps (voir section 3.3) — plus de risque de collision entre PR concurrentes.
+- **Usage de l'IA** : ambiguïté du critère assumée en couvrant les deux lectures possibles — (1) un vrai step de code-review automatisé par IA dans la CI, (2) documentation continue dans `AI_USAGE.md` (alimenté au fil de l'eau, pas reconstitué a posteriori).
+
+## 14. Points encore ouverts
 
 - [ ] Provider d'hébergement pour staging (Azure vs Oracle Cloud Always Free).
 - [ ] Détail exact du contenu de la review de PR assistée par IA (simple documentation vs automatisation réelle).
