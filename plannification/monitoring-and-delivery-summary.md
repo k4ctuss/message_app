@@ -26,37 +26,40 @@ Migration en cours : remote GitLab → GitHub effectuée, la CI GitLab n'a pas e
 ### 3.1 Local
 - Déclencheur : à chaque commit/modification sur le poste du développeur.
 - Durée de vie : permanente (poste de travail).
-- BDD : SQLite (rapide, zéro dépendance, adapté à l'itération).
+- Infra : `docker-compose.yml` avec uniquement le service **Postgres** (port mappé sur `localhost:5432`) ; backend et frontend tournent nativement via `npm run dev` (nodemon/vite) pour garder un hot-reload rapide sans reconstruire d'image à chaque sauvegarde.
+- BDD : **Postgres**, comme partout ailleurs — élimine tout risque de bug qui n'apparaîtrait qu'en dev/staging/prod à cause d'un comportement SQLite différent (contraintes, types...). La suite de tests unitaires, elle, n'a besoin d'aucune BDD (tout est mocké par définition d'un test unitaire).
 - Tests : **unitaires** uniquement (mocks, pas de vraie BDD, `npm test`).
 - Monitoring : aucun.
 
-### 3.2 Dev — environnement éphémère, durée de vie = durée du job CI
+### 3.2 Dev — étape de validation, pas un environnement (durée de vie = durée du job CI)
 - Déclencheur : push/PR vers `dev`.
-- Durée de vie : **uniquement le temps du job CI** — `terraform apply` → déploiement → tests d'intégration → `terraform destroy`, tout dans le même job. Pas de persistance entre deux runs. Pas d'accès manuel prévu : si un ingénieur a besoin d'explorer/débugger, il checkout la branche et lance l'app en local.
-- Infra : petite VM ou conteneur, provisionnée par Terraform (workspace/état identifié par le run CI, détruit systématiquement à la fin du job — succès ou échec).
-- BDD : Postgres conteneurisé, taille réduite, jetable.
+- Ce n'est pas un environnement au sens propre : rien n'est déployé nulle part, rien n'est accessible. C'est une étape de validation automatisée qui monte des conteneurs jetables dans le runner, teste, puis disparaît avec lui.
+- Durée de vie : **uniquement le temps du job CI**. Pas d'accès manuel prévu : si un ingénieur a besoin d'explorer/débugger, il checkout la branche et lance l'app en local.
+- Infra : **aucune infra cloud** — `docker compose up` (backend + Postgres) directement dans le runner GitHub Actions. Chaque run est un runner isolé et jetable par nature : zéro risque de collision entre PR simultanées, rien à détruire explicitement, pas de Terraform impliqué pour cet environnement (le critère IaC reste couvert par staging/prod).
+- BDD : Postgres conteneurisé, reconstruite à zéro à chaque run — `sequelize db:migrate` puis `sequelize db:seed:all` avec un **jeu de données fixe et versionné dans le repo** (pas un snapshot de staging : garantit des tests déterministes et reproductibles).
 - Tests : **tests d'intégration** — vraies requêtes HTTP contre l'API réellement déployée, vraie BDD (pas de mock), exécutés automatiquement pendant le job.
 - Accès manuel : aucun — développement local à la place.
 - Monitoring : aucun (juste les logs du job CI).
-- Hébergement : AWS (même provider/module que prod ; le coût en heures reste négligeable puisque l'environnement ne vit que quelques minutes par run).
-- Point de vigilance à documenter dans le rapport : s'assurer que le `terraform destroy` s'exécute **même si les tests échouent** (step `if: always()` dans le workflow), pour ne jamais laisser de ressource orpheline.
+- Hébergement : aucun (tout tourne dans le runner GitHub Actions, jamais sur le cloud).
 
 ### 3.3 Staging — permanent, infra identique à la prod
 - Déclencheur de déploiement : merge/PR sur `main`.
 - Durée de vie : permanente.
 - Infra : **strictement le même module Terraform que la prod**, juste une variable d'environnement différente (même taille de VM, mêmes conteneurs).
 - BDD : Postgres conteneurisé, données anonymisées/synthétiques.
-- Tests : **E2E complets (Cypress)**, en deux temps — (1) **avant merge**, contre une stack éphémère locale au job CI (`docker-compose up` directement dans le runner, pas sur l'infra cloud) pour valider le code de la PR sans toucher à l'infra partagée ni créer de conflit entre PR concurrentes ; (2) **après merge**, rejoués contre la VM staging réellement déployée, pour valider l'environnement (réseau, secrets, config cloud), avec nettoyage des données de test à la fin.
+- Tests : **E2E complets (Cypress)**, en deux temps — (1) **avant merge**, contre une stack complète lancée via `docker compose up` **directement dans le runner CI**, jamais sur l'infra cloud (aucun risque de collision entre PR simultanées, et rien n'est déployé sur staging avant que ces tests ne passent). BDD reconstruite à zéro avec le même jeu de données fixe versionné que pour dev — volontairement **pas** un snapshot de staging, pour garder des tests déterministes et reproductibles. (2) **après merge**, une fois le déploiement réel effectué sur la VM staging, une confirmation E2E est rejouée contre le **vrai RDS staging** (données anonymisées réelles) pour valider l'environnement (réseau, secrets, config cloud) — en cas d'échec, **rollback automatique** vers le tag précédent (trivial grâce au pattern build-once).
 - Accès manuel : SSH tunnel permanent (`ssh -L 8080:localhost:80 ...`), **pas d'exposition publique du port 80/443** — security group Terraform n'ouvre que le port 22.
 - Monitoring : léger (juste `/health`, pas la stack complète).
-- Hébergement : **[À trancher]** — Azure (B1S, dans le quota gratuit puisque c'est le seul VM sur ce compte) ou Oracle Cloud Always Free (VM ARM, gratuit sans limite de durée). Les deux évitent de cumuler avec le quota AWS déjà utilisé par prod+dev.
+- Hébergement : AWS (EC2 + RDS). Le crédit de 200$ AWS disponible couvre largement les trois environnements sans avoir besoin de jongler entre providers.
 
 ### 3.4 Prod — permanente
 - Déclencheur : release/tag.
 - Durée de vie : permanente, 24/7.
 - Infra : 1 VM AWS (EC2 t2/t3.micro, reste sous les 750h/mois gratuites puisque c'est la seule instance permanente sur ce compte).
 - BDD : Postgres conteneurisé, données réelles.
-- Tests post-déploiement : **tests de fumée** uniquement — non-destructifs (`/health`, vérifier que les pages clés répondent). Jamais de test qui écrit en prod.
+- Tests post-déploiement : **tests de fumée** uniquement — non-destructifs et en lecture seule (`GET /health`, `GET /` du frontend, une route de lecture simple comme `GET /api/groups`), quelques secondes, pas de navigateur nécessaire (simples requêtes HTTP avec assertions). Aucune donnée écrite → aucun nettoyage requis, contrairement aux E2E.
+- **Déploiement sans coupure (blue-green)** : la nouvelle version (`green`) démarre à côté de l'ancienne (`blue`, qui continue de servir le trafic), toutes deux connectées à la même RDS. Une fois `green` health-checkée, nginx bascule son `upstream` de `blue` vers `green` et fait un `nginx -s reload` (gracieux — termine les requêtes en cours sur `blue`, route les nouvelles vers `green`, sans coupure perceptible). `blue` n'est arrêtée qu'une fois `green` confirmée stable par les tests de fumée. En cas d'échec, **rollback quasi instantané** : `blue` n'a jamais été arrêtée, il suffit de refaire pointer nginx vers elle.
+- Implication sur les migrations : pendant la fenêtre où `blue` et `green` tournent en parallèle sur la même base, le schéma doit être compatible avec les deux versions du code — d'où l'importance du pattern expand/contract même sur une fenêtre courte (voir section 13).
 - Accès manuel : HTTP public (80/443, TLS) + SSH restreint pour l'admin.
 - Monitoring : **complet** — Prometheus + Grafana + Alertmanager + node-exporter + cAdvisor, tous sur la même VM que l'app (docker-compose).
 - Hébergement : AWS.
@@ -67,16 +70,16 @@ Migration en cours : remote GitLab → GitHub effectuée, la CI GitLab n'a pas e
 |---|---|---|---|---|
 | Déclencheur | commit | push/PR → `dev` | PR/merge → `main` | release/tag |
 | Durée de vie | permanent (poste) | éphémère (durée du job CI) | permanent | permanent |
-| BDD | SQLite | Postgres (conteneur, réduite, jetable) | Postgres (conteneur, anonymisée) | Postgres (conteneur, réelle) |
+| BDD | Postgres (local, natif+docker) | Postgres (conteneur, jetable) | RDS Postgres (managé) | RDS Postgres (managé) |
 | Tests | unitaires | intégration | E2E (Cypress) + nettoyage | fumée (post-déploiement) |
 | Accès manuel | local | aucun (checkout + run local si besoin) | SSH tunnel permanent | HTTP public + SSH admin |
 | Monitoring | aucun | aucun | léger (`/health`) | complet (Prometheus/Grafana/Alertmanager) |
-| Provider | — | AWS (éphémère) | Azure ou Oracle **[à trancher]** | AWS |
+| Provider | — | aucun (runner CI) | AWS | AWS |
 
 ## 4. Pipelines GitHub Actions
 
 - **`ci.yml`** — sur toute PR, quel que soit la branche cible : lint, tests unitaires, SonarQube, `npm audit`/secret scanning, build des images Docker. Indépendant de tout déploiement.
-- **`cd-dev.yml`** — sur push/PR vers `dev` : `terraform apply` → déploiement → tests d'intégration → `terraform destroy` (systématique, y compris en cas d'échec des tests), tout dans le même job.
+- **`cd-dev.yml`** — sur push/PR vers `dev` : `docker compose up` (backend + Postgres) directement dans le runner, tests d'intégration, aucune infra cloud provisionnée.
 - **`cd-staging.yml`** — sur merge/PR vers `main` : déploiement sur la VM staging persistante → tests E2E Cypress → nettoyage des données de test.
 - **`cd-prod.yml`** — sur tag/release, avec **approbation manuelle** (environment protection rule GitHub) : build/push image → mise à jour de la stack sur la VM prod → tests de fumée.
 
@@ -95,9 +98,10 @@ Principe explicite à documenter dans le rapport : l'image Docker est construite
 
 ## 6. Base de données
 
-- Sequelize permet de changer de dialecte sans réécrire la logique métier — argument clé pour justifier la différenciation d'environnements dans le rapport.
-- **Local** : SQLite (fichier, rapide, zéro dépendance).
-- **Dev/Staging/Prod** : PostgreSQL conteneurisé (pas de RDS, pour éviter un second quota free tier à gérer en parallèle de l'EC2).
+- **Postgres partout** (local, dev, staging, prod) — garantit une parité totale entre environnements, élimine tout risque de bug spécifique à un dialecte SQL qui n'apparaîtrait que dans certains environnements.
+- **Local** : conteneur Postgres via docker-compose (backend/frontend tournent nativement pour le hot-reload).
+- **Dev (runner CI)** : Postgres conteneurisé, jetable — inutile de provisionner un service managé pour un test qui dure quelques minutes.
+- **Staging/Prod** : **AWS RDS Postgres** (managé), provisionné par Terraform. Découple le cycle de vie de la BDD de celui de l'app (redéployer l'EC2 ne touche jamais RDS), sauvegardes et patching gérés par AWS. Rendu possible sans souci de quota grâce au crédit AWS (voir section hébergement).
 
 ### Migrations entre versions
 
@@ -146,12 +150,11 @@ Structure prévue :
 - **TLS/HTTPS** : hors scope, assumé explicitement comme limite dans le rapport (pas de nom de domaine/certificat prévu pour ce projet).
 - **Secrets** : AWS SSM Parameter Store en priorité (gratuit, intégrable via Terraform) ; repli sur `.env` (gitignoré) + GitHub Actions Secrets si le temps manque.
 - **Alerting (Alertmanager → Discord/Slack/email)** : stretch goal, pas bloquant pour la validation du projet.
-- **Rollback** : rollback applicatif prévu (redéploiement du tag précédent, simple grâce au pattern build-once) ; rollback de schéma BDD **laissé ouvert**, documenté comme limite assumée plutôt que résolu à moitié.
+- **Rollback** : sur prod, quasi instantané grâce au déploiement blue-green (bascule nginx vers l'ancien conteneur encore actif, voir section 3.4) ; sur staging, rollback applicatif classique (redéploiement du tag précédent, pattern build-once) en cas d'échec de la confirmation E2E. Rollback de schéma BDD dans les deux cas : atténué par des migrations additives/rétrocompatibles (pattern expand/contract), mais pas résolu à 100 % — documenté comme limite assumée plutôt que traité en profondeur, vu l'échelle du projet.
 - **Concurrence sur staging** : résolue par le découpage de la validation E2E en deux temps (voir section 3.3) — plus de risque de collision entre PR concurrentes.
 - **Usage de l'IA** : ambiguïté du critère assumée en couvrant les deux lectures possibles — (1) un vrai step de code-review automatisé par IA dans la CI, (2) documentation continue dans `AI_USAGE.md` (alimenté au fil de l'eau, pas reconstitué a posteriori).
 
 ## 14. Points encore ouverts
 
-- [ ] Provider d'hébergement pour staging (Azure vs Oracle Cloud Always Free).
 - [ ] Détail exact du contenu de la review de PR assistée par IA (simple documentation vs automatisation réelle).
 - [ ] Rédaction de la description de PR à soumettre aux profs pour validation du plan.
