@@ -46,7 +46,7 @@ Migration en cours : remote GitLab → GitHub effectuée, la CI GitLab n'a pas e
 - Déclencheur de déploiement : merge/PR sur `main`.
 - Durée de vie : permanente.
 - Infra : **strictement le même module Terraform que la prod**, juste une variable d'environnement différente (même taille de VM, mêmes conteneurs).
-- BDD : Postgres conteneurisé, données anonymisées/synthétiques.
+- BDD : RDS Postgres (managé), données anonymisées/synthétiques.
 - Tests : **E2E complets (Cypress)**, en deux temps — (1) **avant merge**, contre une stack complète lancée via `docker compose up` **directement dans le runner CI**, jamais sur l'infra cloud (aucun risque de collision entre PR simultanées, et rien n'est déployé sur staging avant que ces tests ne passent). BDD reconstruite à zéro avec le même jeu de données fixe versionné que pour dev — volontairement **pas** un snapshot de staging, pour garder des tests déterministes et reproductibles. (2) **après merge**, une fois le déploiement réel effectué sur la VM staging, une confirmation E2E est rejouée contre le **vrai RDS staging** (données anonymisées réelles) pour valider l'environnement (réseau, secrets, config cloud) — en cas d'échec, **rollback automatique** vers le tag précédent (trivial grâce au pattern build-once).
 - Accès manuel : SSH tunnel permanent (`ssh -L 8080:localhost:80 ...`), **pas d'exposition publique du port 80/443** — security group Terraform n'ouvre que le port 22.
 - Monitoring : léger (juste `/health`, pas la stack complète).
@@ -56,7 +56,7 @@ Migration en cours : remote GitLab → GitHub effectuée, la CI GitLab n'a pas e
 - Déclencheur : release/tag.
 - Durée de vie : permanente, 24/7.
 - Infra : 1 VM AWS (EC2 t2/t3.micro, reste sous les 750h/mois gratuites puisque c'est la seule instance permanente sur ce compte).
-- BDD : Postgres conteneurisé, données réelles.
+- BDD : RDS Postgres (managé), données réelles.
 - Tests post-déploiement : **tests de fumée** uniquement — non-destructifs et en lecture seule (`GET /health`, `GET /` du frontend, une route de lecture simple comme `GET /api/groups`), quelques secondes, pas de navigateur nécessaire (simples requêtes HTTP avec assertions). Aucune donnée écrite → aucun nettoyage requis, contrairement aux E2E.
 - **Déploiement sans coupure (blue-green)** : la nouvelle version (`green`) démarre à côté de l'ancienne (`blue`, qui continue de servir le trafic), toutes deux connectées à la même RDS. Une fois `green` health-checkée, nginx bascule son `upstream` de `blue` vers `green` et fait un `nginx -s reload` (gracieux — termine les requêtes en cours sur `blue`, route les nouvelles vers `green`, sans coupure perceptible). `blue` n'est arrêtée qu'une fois `green` confirmée stable par les tests de fumée. En cas d'échec, **rollback quasi instantané** : `blue` n'a jamais été arrêtée, il suffit de refaire pointer nginx vers elle.
 - Implication sur les migrations : pendant la fenêtre où `blue` et `green` tournent en parallèle sur la même base, le schéma doit être compatible avec les deux versions du code — d'où l'importance du pattern expand/contract même sur une fenêtre courte (voir section 13).
@@ -83,7 +83,15 @@ Migration en cours : remote GitLab → GitHub effectuée, la CI GitLab n'a pas e
 - **`cd-staging.yml`** — sur merge/PR vers `main` : déploiement sur la VM staging persistante → tests E2E Cypress → nettoyage des données de test.
 - **`cd-prod.yml`** — sur tag/release, avec **approbation manuelle** (environment protection rule GitHub) : build/push image → mise à jour de la stack sur la VM prod → tests de fumée.
 
-### Stratégie "build once, deploy many"
+### Règles GitHub  configurer
+
+**Branch protection sur `main`** : PR obligatoire (pas de push direct), status checks requis (`ci.yml` + job E2E pré-merge), branche à jour avant merge, conversations résolues, historique linéaire (squash/rebase), pas de force-push/suppression, règles appliquées aux admins. Review obligatoire si plusieurs contributeurs (sinon documenter le choix solo).
+
+**Branch protection sur `dev`** : même logique allégée — PR + `ci.yml`/job d'intégration comme status checks requis, pas de gate E2E.
+
+**GitHub Environments** : un environnement `production` avec reviewer requis, c'est ce qui implémente concrètement l'approbation manuelle avant déploiement prévue dans `cd-prod.yml`.
+
+**Tag protection** : protéger les tags `v*` contre suppression/écrasement, cohérent avec le principe d'immutabilité des releases.
 
 Principe explicite à documenter dans le rapport : l'image Docker est construite **une seule fois** au moment du merge vers `main`, taguée (SHA du commit ou semver), poussée vers un registre (GHCR). Elle est déployée telle quelle sur staging via `docker compose pull` + `up -d`. Au moment de la release, **on ne rebuild rien** : on promeut la même image, déjà validée sur staging, vers la VM prod. Ce qui tourne en prod est donc bit-à-bit ce qui a été testé, jamais un nouveau build à partir du même code source.
 
@@ -157,4 +165,5 @@ Structure prévue :
 ## 14. Points encore ouverts
 
 - [ ] Détail exact du contenu de la review de PR assistée par IA (simple documentation vs automatisation réelle).
+- [ ] Passer le repo en public (plus tard, pas immédiatement) pour débloquer "Required reviewers" sur l'environnement `production` — indisponible sur repo privé en dehors de GitHub Enterprise. En attendant, gate manuel via `workflow_dispatch` sur `cd-prod.yml`.
 - [ ] Rédaction de la description de PR à soumettre aux profs pour validation du plan.
