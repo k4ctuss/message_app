@@ -34,6 +34,12 @@ app.use('/', express.static('./src/frontend'))
 // Assign Routes
 app.use('/api', require('./routes/protected.js'))
 app.use('/', require('./routes/connection.js'))
+
+// health endpoint 
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: true, message: 'Server is healthy' })
+})
+
 // Handle errors
 app.use(errorHandler())
 
