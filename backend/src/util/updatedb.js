@@ -4,26 +4,53 @@ const messageModel = require('../models/messages.js')
 const bcrypt = require('bcrypt');
 // Ajouter ici les nouveaux require des nouveaux modèles
 
-// eslint-disable-next-line no-unexpected-multiline
-(async () => {
-  // Regénère la base de données
-  await require('../models/database.js').sync({ force: true })
-  console.log('Base de données créée.')
-  // Initialise la base avec quelques données
-  const passhash = await bcrypt.hash('123456', 2);
-  const nolan = await userModel.create({
-    name: 'nolan blanc', email: 'nolan.blanc@grenoble-inp.org', passhash, isAdmin:true
+const database = require('../models/database.js')
+const resetDatabase = process.env.DB_RESET === 'true'
+const seedDatabase = process.env.DB_SEED === 'true'
+
+async function seed () {
+  const passhash = await bcrypt.hash('123456', 2)
+  const [nolan] = await userModel.findOrCreate({
+    where: { email: 'nolan.blanc@grenoble-inp.org' },
+    defaults: {
+      name: 'nolan blanc',
+      passhash,
+      isAdmin: true
+    }
   })
-  
-  // Ajouter ici le code permettant d'initialiser par défaut la base de donnée
-  const myGroup = await groupModel.create({ name: 'superGroup'});
-  await myGroup.setCreateOrOwn(nolan);
 
-  await myGroup.addMember(nolan);
-  const helloWorld = await messageModel.create({content:"helloWorld"});
-  await myGroup.addMessage(helloWorld);
-  await helloWorld.setGroup(myGroup);
-  await helloWorld.setUser(nolan);
-  await nolan.addMessage(helloWorld);
+  const [myGroup, groupCreated] = await groupModel.findOrCreate({
+    where: { name: 'superGroup' }
+  })
+  await myGroup.setCreateOrOwn(nolan)
+  await myGroup.addMember(nolan)
 
-})()
+  if (!groupCreated) {
+    return
+  }
+
+  const helloWorld = await messageModel.create({ content: 'helloWorld' })
+  await myGroup.addMessage(helloWorld)
+  await helloWorld.setGroup(myGroup)
+  await helloWorld.setUser(nolan)
+  await nolan.addMessage(helloWorld)
+}
+
+async function updateDatabase () {
+  if (resetDatabase && process.env.NODE_ENV === 'production') {
+    throw new Error('DB_RESET=true is forbidden in production')
+  }
+
+  await database.sync({ force: resetDatabase })
+
+  if (seedDatabase) {
+    await seed()
+  }
+}
+
+updateDatabase()
+  .then(() => database.close())
+  .catch(error => {
+    console.error(error)
+    process.exitCode = 1
+  })

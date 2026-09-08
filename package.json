@@ -1,0 +1,12 @@
+{
+  "scripts": {
+    "dev": "docker compose --profile db up -d && concurrently -k -n backend,frontend -c blue,green \"npm --prefix backend run startdev\" \"npm --prefix frontend run dev\""
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/k4ctuss/message_app.git"
+  },
+  "devDependencies": {
+    "concurrently": "^10.0.5"
+  }
+}
