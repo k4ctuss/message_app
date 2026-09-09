@@ -1,25 +1,12 @@
-// Load Enviroment Variables to process.env (if not present take variables defined in .env file)
-require('mandatoryenv').load(['DB_NAME', 'DB_HOST', 'DB_PORT', 'DB_USER', 'DB_PASSWORD'])
-const {
-	DB_NAME,
-	DB_HOST,
-	DB_PORT,
-	DB_USER,
-	DB_PASSWORD,
-	DB_LOG
-} = process.env
-
 const Sequelize = require('sequelize')
-const isDbLoggingEnabled = ['1', 'true', 'yes', 'on'].includes(String(DB_LOG || '').toLowerCase())
-const commonOptions = {
-	dialect: 'postgres',
-	logging: isDbLoggingEnabled ? console.log : false,
-	dialectOptions: process.env.DB_SSL === 'true'
-		? { ssl: { require: true, rejectUnauthorized: false } }
-		: {}
+const config = require('../../config/config.js')[process.env.NODE_ENV || 'development']
+
+if (process.env.NODE_ENV === 'production' && !process.env.DATABASE_URL) {
+  throw new Error('DATABASE_URL manquant en production — arrêt volontaire')
 }
 
-const db = process.env.DATABASE_URL
-	? new Sequelize(process.env.DATABASE_URL, commonOptions)
-	: new Sequelize(DB_NAME, DB_USER, DB_PASSWORD, { ...commonOptions, host: DB_HOST || 'localhost', port: DB_PORT || 5432 })
+const db = config.use_env_variable
+  ? new Sequelize(process.env[config.use_env_variable], config)
+  : new Sequelize(config.database, config.username, config.password, config)
+
 module.exports = db

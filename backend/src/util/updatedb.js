@@ -1,50 +1,24 @@
-const userModel = require('../models/users.js')
-const groupModel = require('../models/groups.js')
-const messageModel = require('../models/messages.js')
-const bcrypt = require('bcrypt');
-// Ajouter ici les nouveaux require des nouveaux modèles
-
 const database = require('../models/database.js')
+const { execSync } = require('child_process')
+
 const resetDatabase = process.env.DB_RESET === 'true'
 const seedDatabase = process.env.DB_SEED === 'true'
 
-async function seed () {
-  const passhash = await bcrypt.hash('123456', 2)
-  const [nolan] = await userModel.findOrCreate({
-    where: { email: 'nolan.blanc@grenoble-inp.org' },
-    defaults: {
-      name: 'nolan blanc',
-      passhash,
-      isAdmin: true
-    }
-  })
-
-  const [myGroup, groupCreated] = await groupModel.findOrCreate({
-    where: { name: 'superGroup' }
-  })
-  await myGroup.setCreateOrOwn(nolan)
-  await myGroup.addMember(nolan)
-
-  if (!groupCreated) {
-    return
-  }
-
-  const helloWorld = await messageModel.create({ content: 'helloWorld' })
-  await myGroup.addMessage(helloWorld)
-  await helloWorld.setGroup(myGroup)
-  await helloWorld.setUser(nolan)
-  await nolan.addMessage(helloWorld)
-}
-
 async function updateDatabase () {
-  if (resetDatabase && process.env.NODE_ENV === 'production') {
-    throw new Error('DB_RESET=true is forbidden in production')
+  const isResetAllowed = ['test', 'development'].includes(process.env.NODE_ENV) && !process.env.DATABASE_URL
+
+  if (resetDatabase) {
+    if (!isResetAllowed) {
+      throw new Error(`DB reset refusé : NODE_ENV="${process.env.NODE_ENV}" n'autorise pas le reset`)
+    }
+    execSync('npx sequelize-cli db:seed:undo:all', { stdio: 'inherit' })
+    execSync('npx sequelize-cli db:migrate:undo:all', { stdio: 'inherit' })
   }
 
-  await database.sync({ force: resetDatabase })
+  execSync('npx sequelize-cli db:migrate', { stdio: 'inherit' })
 
   if (seedDatabase) {
-    await seed()
+    execSync('npx sequelize-cli db:seed:all', { stdio: 'inherit' })
   }
 }
 

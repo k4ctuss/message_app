@@ -28,4 +28,4 @@ if [ "$exists" != "1" ]; then
 fi
 
 cd "$SCRIPT_DIR"
-DB_NAME=messaging_test DB_RESET=true DB_SEED=true npm run updatedb
+DB_NAME=messaging_test NODE_ENV=test DB_RESET=true DB_SEED=true npm run updatedb
