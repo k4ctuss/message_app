@@ -5,33 +5,154 @@
 
 
 ---
-title: Projet React 
+title: Messaging App  
 author:  
 - Blanc Nolan
 --- 
 
 ## Installation
 
-Donner les éléments pour installer l'application sur une machine nue à partir de votre dépôt
+Dev mode (docker compose needed):
+First create your .env files both in backend and frontend directories, you can use the .env.example files as a template.
+To launch the backend and frontend in dev mode, you can use the following command in the project directory:
+```sh
+  npm run dev
+```
+This commande will create or restart a docker container for the postgres database, and then launch the backend and frontend in dev mode. The backend will be accessible at http://localhost:3000/api and the frontend at http://localhost:5173 and doc at http://localhost:3000/docs. The backend will be automatically restarted if you modify the code, and the frontend will be automatically reloaded if you modify the code.
 
-En mode développement : 
+> [!TIP] If you want to seed or reset the database, you can call the command with the following environment variables:
+>```sh
+>  DB_SEED=true npm run dev # to seed the database
+>  DB_RESET=true DB_SEED=true npm run dev # to reset and seed the database
+>```
 
-~~~bash
-cd frontend;npm install;npm run dev #frontend en mode développement (accessible à http://localhost:5173)
-commande # pour lancer les tests frontend
-cd backend;npm install;npm run stardev # backend en mode développement avec accès à l'api via http://localhost:3000/api
-#cd backend;npm install;npm run startdev:proxyreact #backend en mode développement avec un accès à l'application react via un proxy à http://localhost:3000/ et l'api à http://localhost:3000/api
-commande # pour lancer les tests backend ?
-~~~
+prod (on aws):
+  TODO
 
-En mode production :
+## Architecture du code
 
-~~~bash
-cd frontend;npm install;npm run build # génération du frontend dans frontend/dist
-cd backend;npm install;npm run start # backend
-firefox https://xxx.scalingo.ioscalingo/ # pour accéder à l'application si déployé en ligne
-firefox https://xxx.scalingo.ioscalingo/docs # pour accéder à la doc scalingo si déployé en ligne
-~~~
+### FrontEnd
+
+```
+frontend
+|-- components.json
+|-- cypress
+|   |-- e2e
+|   |   `-- connection.cy.js
+|   |-- fixtures
+|   `-- support
+|-- cypress.config.js
+|-- eslint.config.js
+|-- index.html
+|-- jsconfig.json
+|-- package.json
+|-- public
+|-- README.md
+|-- src
+|   |-- App.css
+|   |-- App.jsx
+|   |-- assets
+|   |   |-- hero.png
+|   |   |-- react.svg
+|   |   `-- vite.svg
+|   |-- components
+|   |   |-- auth
+|   |   |-- group
+|   |   |-- message
+|   |   `-- ui
+|   |-- contexts
+|   |   |-- AuthContext.jsx
+|   |   `-- SocketContext.jsx
+|   |-- hooks
+|   |   |-- useDiscussion.js
+|   |   |-- useGroups.js
+|   |   `-- useManageGroup.js
+|   |-- index.css
+|   |-- lib
+|   |   `-- utils.js
+|   |-- main.jsx
+|   `-- views
+|       |-- Accueil.jsx
+|       `-- Connection.jsx
+`-- vite.config.js
+```
+
+### Backend
+
+#### Schéma de votre base de donnée
+
+A modifier/compléter...
+
+```plantuml
+class User{
+  name
+  email
+  passhash
+  isAdmin : boolean
+}
+
+class Message{
+  content
+}
+
+class Group{
+  name
+}
+
+User "1" -- "n" Message : posts
+Group "1" -- "n" Message : contains
+
+User "n" -- "n"  Group : is member 
+User "1" -- "n"  Group : create and own
+```
+
+```
+backend
+|-- config
+|   `-- config.js
+|-- jest.config.js
+|-- jest.setup.js
+|-- migrations/       # folder containing the migration files for the database 
+|-- seeders/          # folder containing the seed files for the database 
+|-- package.json
+|-- setup-test.sh     # script to setup the test database before running the tests
+`-- src
+    |-- __tests__     # folder containing the unit and integration tests
+    |-- app.js        # entry point of the express app
+    |-- controllers   # folder containing the controllers for the different endpoints
+    |   |-- group.js
+    |   |-- message.js
+    |   `-- user.js
+    |-- frontend
+    |   `-- index.html
+    |-- models        # folder containing the models for the database tables
+    |   |-- database.js
+    |   |-- groups.js
+    |   |-- messages.js
+    |   `-- users.js
+    |-- routes        # folder containing the routes for the different endpoints
+    |   |-- connection.js
+    |   |-- group.js
+    |   |-- message.js
+    |   |-- protected.js
+    |   `-- user.js
+    |-- server.js   # entry point of the backend server
+    |-- util        # folder containing utility functions for the backend
+    |   |-- CodeError.js
+    |   |-- logger.js
+    |   |-- swagger.js
+    |   `-- updatedb.js
+    `-- websocket   
+        `-- websocket.js  # folder containing all websocket functions
+```
+
+### Gestion des rôles et droits
+
+Expliquer ici les différents rôles mis en place, et comment ils sont gérés dans votre code.
+
+- Coté backend
+
+- Coté frontend
 
 ## Cahier des charges
 
@@ -118,92 +239,6 @@ Donner le lien vers la documentation swagger et/ou faire un tableau récapitulan
 
 A compléter
 
-## Architecture du code
-
-### FrontEnd
-
-Indiquer ici l'organisation de votre code. Et les choix faits pour le frontend.
-
-~~~bash
-# exemple d'arborescence commentée avec la commande 'tree'
-login@pc nomProjet % tree --charset=ascii frontend
-.
-|-- README.md
-|-- index.html
-|-- package.json
-|-- src
-|   |-- App.css
-|   |-- App.jsx
-|   |-- components
-|   |   `-- ComposantX.jsx # Formulaire de login
-|   |-- index.css # feuille de style
-|   |-- main.jsx
-|   |-- utils
-|   `-- views
-|       `-- ViewX.jsx
-~~~
-
-### Backend
-
-#### Schéma de votre base de donnée
-
-A modifier/compléter...
-
-```plantuml
-class User{
-  name
-  email
-  passhash
-  isAdmin : boolean
-}
-
-class Message{
-  content
-}
-
-class Group{
-  name
-}
-
-User "1" -- "n" Message : posts
-Group "1" -- "n" Message : contains
-
-User "n" -- "n"  Group : is member 
-User "1" -- "n"  Group : create and own
-```
-
-#### Architecture de votre code
-
-Indiquer ici l'organisation de votre code. Et les choix faits pour le backend.
-
-~~~bash
-# exemple d'arborescence commentée
-tree --charset=ascii backend                                                                                                          
-.
-|-- src
-|   |-- __tests__
-|   |   `-- testX.js
-|   |-- app.js
-|   |-- controllers
-|   |   `-- controllerX.js #controlleur de api/group:id
-|   |-- models
-|   |   `-- modelX.js #modèle de user
-|   |-- routes
-|   |   `-- routeX.js #route gérant api/group{/:id}
-|   |-- server.js
-|   `-- util
-|       |-- utilX.js #initialisation de la BD
-|-- swagger_output.json
-`-- bd.sqlite
-~~~
-
-### Gestion des rôles et droits
-
-Expliquer ici les différents rôles mis en place, et comment ils sont gérés dans votre code.
-
-- Coté backend
-
-- Coté frontend
 
 
 ## Test

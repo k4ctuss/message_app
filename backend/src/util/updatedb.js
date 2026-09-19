@@ -1,29 +1,30 @@
-const userModel = require('../models/users.js')
-const groupModel = require('../models/groups.js')
-const messageModel = require('../models/messages.js')
-const bcrypt = require('bcrypt');
-// Ajouter ici les nouveaux require des nouveaux modèles
+const database = require('../models/database.js')
+const { execSync } = require('child_process')
 
-// eslint-disable-next-line no-unexpected-multiline
-(async () => {
-  // Regénère la base de données
-  await require('../models/database.js').sync({ force: true })
-  console.log('Base de données créée.')
-  // Initialise la base avec quelques données
-  const passhash = await bcrypt.hash('123456', 2);
-  const nolan = await userModel.create({
-    name: 'nolan blanc', email: 'nolan.blanc@grenoble-inp.org', passhash, isAdmin:true
+const resetDatabase = process.env.DB_RESET === 'true'
+const seedDatabase = process.env.DB_SEED === 'true'
+
+async function updateDatabase () {
+  const isResetAllowed = ['test', 'development'].includes(process.env.NODE_ENV) && !process.env.DATABASE_URL
+
+  if (resetDatabase) {
+    if (!isResetAllowed) {
+      throw new Error(`DB reset refusé : NODE_ENV="${process.env.NODE_ENV}" n'autorise pas le reset`)
+    }
+    execSync('npx sequelize-cli db:seed:undo:all', { stdio: 'inherit' })
+    execSync('npx sequelize-cli db:migrate:undo:all', { stdio: 'inherit' })
+  }
+
+  execSync('npx sequelize-cli db:migrate', { stdio: 'inherit' })
+
+  if (seedDatabase) {
+    execSync('npx sequelize-cli db:seed:all', { stdio: 'inherit' })
+  }
+}
+
+updateDatabase()
+  .then(() => database.close())
+  .catch(error => {
+    console.error(error)
+    process.exitCode = 1
   })
-  
-  // Ajouter ici le code permettant d'initialiser par défaut la base de donnée
-  const myGroup = await groupModel.create({ name: 'superGroup'});
-  await myGroup.setCreateOrOwn(nolan);
-
-  await myGroup.addMember(nolan);
-  const helloWorld = await messageModel.create({content:"helloWorld"});
-  await myGroup.addMessage(helloWorld);
-  await helloWorld.setGroup(myGroup);
-  await helloWorld.setUser(nolan);
-  await nolan.addMessage(helloWorld);
-
-})()
