@@ -1,6 +1,6 @@
 # todo
 
-- [ ] update README.md with installation instructions : launch backend setup the first time and then use npm run dev in project directory to launch backend and frontend in dev mode
+- [x] update README.md with installation instructions : launch backend setup the first time and then use npm run dev in project directory to launch backend and frontend in dev mode
 - [ ] migrate ci pipepline to github actions (creer projet sonar aussi)
 - [ ] Ajouter Vitest + React Testing Library pour les tests unitaires frontend.
 - [ ] create unit tests for backend and frontend. those shoudl be run in ci and locally with pre-commit hook. 
@@ -10,7 +10,7 @@
 - [ ] set up le ssm sur aws avec le db url et creer les databases sur RDS. Permissions au niveau du rôle Postgres : le compte utilisé par l'app en prod ne devrait avoir que SELECT/INSERT/UPDATE/DELETE, jamais de droits DROP/TRUNCATE/ALTER.
 - [ ] definir le plan pour le monitoring de la prod avec prometheus et grafana ( docker ou composant de aws ) implmenter /metric avec metrics a scrape et donc definir les metrics et les mesurer sur les endpoints de l'api, les et voir alerte si le temps le permet
 - [ ] Ajouter un healthcheck PostgreSQL dans docker-compose.yml.
-- [ ] ajouter un .env.example avec les variables d'environnement necessaires pour lancer le projet en dev en local. (DB_NAME, DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, PORT, TOKENSECRET) les DB_* doivent etre les memes que dans le docker-compose.yml pour que le projet fonctionne en dev en local avec docker-compose up.
+- [x] ajouter un .env.example avec les variables d'environnement necessaires pour lancer le projet en dev en local. (DB_NAME, DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, PORT, TOKENSECRET) les DB_* doivent etre les memes que dans le docker-compose.yml pour que le projet fonctionne en dev en local avec docker-compose up.
 
 ```json
 {
