@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import { check_email } from "@/lib/utils";
 
 export function SignUpForm({registerCallback}){
     const [name, setName] = useState("");
@@ -40,7 +41,7 @@ export function SignUpForm({registerCallback}){
         if(!name && !email && !passwords[0])
             return "";
 
-        if(!/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,})+$/.test(email)){
+        if(!check_email(email)){
             return "Mail Invalide !";
         }
         if (passwords[0].trim().length<6) {

@@ -1,5 +1,5 @@
 function apiUrl() {
-  return Cypress.env("apiUrl") || "http://localhost:3000";
+  return Cypress.expose("apiUrl") || "http://localhost:3000";
 }
 
 function authHeaders(token) {

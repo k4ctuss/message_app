@@ -35,7 +35,7 @@ describe("Group management", () => {
     cy.contains(`Administration "${groupName}"`).should("be.visible");
 
     cy.get("[data-cy=select-member]").should("not.be.disabled").click();
-    cy.contains("[data-slot=select-item]", member.email).click();
+		cy.contains('[role="option"]', member.email).realClick();
     cy.get("[data-cy=add-member]").should("not.be.disabled").click();
     cy.contains(member.email).should("be.visible");
 
@@ -52,7 +52,7 @@ describe("Group management", () => {
     cy.loginApi(owner).then((session) => {
       cy.request({
         method: "GET",
-        url: `${Cypress.env("apiUrl") || "http://localhost:3000"}/api/mygroups`,
+        url: `${Cypress.expose("apiUrl") || "http://localhost:3000"}/api/mygroups`,
         headers: { "x-access-token": session.token },
       }).then((response) => {
         const group = response.body.groups.find((g) => g.name === groupName);

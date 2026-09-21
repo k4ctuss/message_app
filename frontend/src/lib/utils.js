@@ -27,3 +27,7 @@ export function getCookie(cname){
     }
     return "";
 }
+
+export function check_email(email){
+	return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}

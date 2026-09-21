@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import {Input} from '@/components/ui/input';
 import { Field, FieldLabel, FieldGroup, FieldLegend, FieldSet, FieldError} from '@/components/ui/field';
 import { Card, CardContent } from '@/components/ui/card';
-
+import { check_email } from '@/lib/utils';
 
 
 export function LoginForm({registerEmail=""}){
@@ -35,7 +35,7 @@ export function LoginForm({registerEmail=""}){
     if(!email && !password)
       return "";
 
-    if(!/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,})+$/.test(email)){
+    if(!check_email(email)){
       return "Mail Invalide !";
     }
     if (password.length<6) {
