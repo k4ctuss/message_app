@@ -99,7 +99,10 @@ export function useManageGroup(gid){
     }, [manageMember]);
 
     const addMemberWS = useCallback((memberId)=>{
-        if(!socket) return;
+        if(!socket) {
+            addMember(memberId);
+            return;
+        }
         socket.emit('addMember', {gid, uid: memberId}, (res)=>{
             if(res.status == 'NOK')
                 setError(res.message);
@@ -109,10 +112,13 @@ export function useManageGroup(gid){
             }
         });
 
-    },[gid, socket])
+    },[gid, socket, addMember])
     
     const deleteMemberWS = useCallback((memberId)=>{
-        if(!socket) return;
+        if(!socket) {
+            deleteMember(memberId);
+            return;
+        }
         socket.emit('deleteMember', {gid, uid: memberId}, (res)=>{
             if(res.status == 'NOK')
                 setError(res.message);
@@ -122,7 +128,7 @@ export function useManageGroup(gid){
             }
         });
 
-    },[gid, socket])
+    },[gid, socket, deleteMember])
 
 
     useEffect(()=>{

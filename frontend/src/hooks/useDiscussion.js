@@ -84,18 +84,24 @@ export function useDiscussion(gid){
 
     const sendMessage = useCallback((content)=>{
 
-        if(!socket || !gid || !Number.isInteger(Number(gid))){
+        if(!gid || !Number.isInteger(Number(gid))){
             setError("groupe invalid ou serveur inaccessible");
+            return;
+        }
+        if(!socket){
+            addMessage(content);
             return;
         }
         socket.emit('newMessage', {gid, content}, (res)=>{
             if(res.status === "NOK")
                 setError(res.message);
-            else
+            else {
                 setError(null);
+                fetchMessages();
+            }
         });
 
-    },[socket, gid]);
+    },[socket, gid, addMessage, fetchMessages]);
 
     function handlerReceiveMessage(message){
         console.log("received", message);

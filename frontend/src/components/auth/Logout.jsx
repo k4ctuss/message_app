@@ -3,5 +3,5 @@ import { Button } from "@/components/ui/button";
 
 export function Logout(){
     const {logout} = useAuth();
-    return <Button onClick={logout} variant="outline" >Se deconnecter</Button>;
+    return <Button data-cy="logout" onClick={logout} variant="outline" >Se deconnecter</Button>;
 }

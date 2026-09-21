@@ -47,7 +47,7 @@ export function AdminGroup(){
                                         onValueChange={id => setAddMemberId(id)}
                                         disabled={group.potentialMembers.length===0}
                                     >
-                                        <SelectTrigger className="w-full max-w-48">
+                                        <SelectTrigger data-cy="select-member" className="w-full max-w-48">
                                             <SelectValue placeholder="Selection un user" >
                                                 {addMemberId && group.potentialMembers.find(u => String(u.id) === String(addMemberId))?.email}
                                             </SelectValue>
@@ -64,6 +64,7 @@ export function AdminGroup(){
                                         </SelectContent>
                                     </Select>
                                     <Button
+                                        data-cy="add-member"
                                         disabled={!addMemberId || loading}
                                         onClick={()=>{
                                             setAddMemberId(null);
@@ -82,6 +83,7 @@ export function AdminGroup(){
                                         <div key={member.id} className="flex justify-between items-center">
                                             <span>{member.email}</span>
                                             <Button
+                                                data-cy={`remove-member-${member.id}`}
                                                 variant="destructive"
                                                 disabled={loading}
                                                 onClick={()=>{deleteMemberWS(member.id);}}

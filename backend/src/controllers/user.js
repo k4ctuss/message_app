@@ -87,12 +87,15 @@ module.exports = {
     res.json({ status: true, message: 'User updated' })
   },
   async deleteUser (req, res) {
-    // TODO : verify if the token is valid and correspond to an admin
     // #swagger.tags = ['Users']
-    // #swagger.summary = 'Delete User'
+    // #swagger.summary = 'Delete own account, or any user if requester is admin'
     if (!has(req.params, 'id')) throw new CodeError('You must specify the id', status.BAD_REQUEST)
-    const { id } = req.params
-    await userModel.destroy({ where: { id } })
+    const targetId = Number(req.params.id)
+    if (!Number.isInteger(targetId)) throw new CodeError('You must specify the id', status.BAD_REQUEST)
+    if (!req.user.isAdmin && req.user.id !== targetId) {
+      throw new CodeError('Forbidden', status.FORBIDDEN)
+    }
+    await userModel.destroy({ where: { id: targetId } })
     res.json({ status: true, message: 'User deleted' })
   },
   async updatePassword(req, res){

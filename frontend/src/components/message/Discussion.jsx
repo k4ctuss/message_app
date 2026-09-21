@@ -19,8 +19,10 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useSocket } from "@/contexts/SocketContext";
 import { SendHorizontal } from "lucide-react";
 
+const API_URL = import.meta.env.VITE_API_URL;
+
 export function Discussion(){
-    const {user} = useAuth();
+    const {user, token} = useAuth();
     const {socket} = useSocket();
     const navigate = useNavigate();
     const params = useParams();
@@ -28,13 +30,20 @@ export function Discussion(){
     const [newMessage, setNewMessage] = useState("");
     const scrollRef = useRef(null);
 
-    function leaveGroup(){
+    async function leaveGroup(){
         if(socket){
             socket.emit('deleteMember', {gid:params.gid, uid: user.id}, (res)=>{
                 if(res.status == 'NOK') console.log(res.messages);
                 else navigate('/');
             });
+            return;
         }
+
+        const response = await fetch(`${API_URL}/api/mygroups/${params.gid}/${user.id}`, {
+            method: 'DELETE',
+            headers: { 'x-access-token': token }
+        });
+        if(response.ok) navigate('/');
     }
 
     function handleAddMessage(){
@@ -56,7 +65,7 @@ export function Discussion(){
         <Card className="md:w-sm">
             <CardHeader>
                 <CardTitle>Discussion dans le groupe {isLoading?(<Skeleton className="h-4 w-25"/>):(params?.name)}</CardTitle>
-                <CardAction><Button variant="destructive" onClick={()=>leaveGroup()} >Leave group</Button></CardAction>
+                <CardAction><Button data-cy="leave-group" variant="destructive" onClick={()=>leaveGroup()} >Leave group</Button></CardAction>
             </CardHeader>
             <CardContent>
                 <ScrollArea
@@ -93,12 +102,14 @@ export function Discussion(){
                 orientation="horizontal"
                 >
                     <Input type="text" 
+                        data-cy="new-message"
                         value={newMessage} 
                         onChange={e=>setNewMessage(e.target.value)}
                         onKeyDown={e=>{if(e.key === "Enter") handleAddMessage()}}
                         placeholder="Nouveau message"
                     />
                     <Button 
+                        data-cy="send-message"
                         disabled={!newMessage || isRefetching || isLoading} 
                         onClick={()=>{handleAddMessage()}}
                         className="rounded-full p-2"

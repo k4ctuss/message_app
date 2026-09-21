@@ -125,6 +125,40 @@ test('Test list users', async()=>{
 
 })
 
+test('user can delete own account but not another user', async () => {
+  const stamp = Date.now()
+  const selfUser = { name: 'Self One', email: `self.one.${stamp}@test.test`, password: '1Mot2passe*' }
+  const otherUser = { name: 'Self Two', email: `self.two.${stamp}@test.test`, password: '1Mot2passe*' }
+
+  await request(app).post('/register').send(selfUser)
+  await request(app).post('/register').send(otherUser)
+
+  let response = await request(app).post('/login').send({ email: selfUser.email, password: selfUser.password })
+  const selfToken = response.body.token
+  const selfId = response.body.user.id
+
+  response = await request(app).post('/login').send({ email: otherUser.email, password: otherUser.password })
+  const otherToken = response.body.token
+  const otherId = response.body.user.id
+
+  response = await request(app)
+    .delete(`/api/users/${otherId}`)
+    .set('x-access-token', selfToken)
+  expect(response.statusCode).toBe(403)
+  expect(response.body.message).toBe('Forbidden')
+
+  response = await request(app)
+    .delete(`/api/users/${selfId}`)
+    .set('x-access-token', selfToken)
+  expect(response.statusCode).toBe(200)
+  expect(response.body.message).toBe('User deleted')
+
+  response = await request(app)
+    .delete(`/api/users/${otherId}`)
+    .set('x-access-token', otherToken)
+  expect(response.statusCode).toBe(200)
+})
+
 test('Test update password', async()=>{
 
   let response = await request(app)

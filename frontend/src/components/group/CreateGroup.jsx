@@ -9,12 +9,13 @@ export function CreateGroup({createGroup}){
     return(
         <div className="flex flex-col mt-3 gap-2">
             <Input type="text" 
+                data-cy="new-group-name"
                 placeholder="nom du nouveau groupe"
                 className="w-full" value={newGroupName} 
                 onKeyDown={e=>{if(e.key === "Enter" && newGroupName) createGroup(newGroupName)}}
                 onChange={e=>setNewGroupName(e.target.value)}
             />
-            <Button onClick={() => createGroup(newGroupName)} className="w-25" disabled={!newGroupName} >Créer</Button>
+            <Button data-cy="create-group" onClick={() => createGroup(newGroupName)} className="w-25" disabled={!newGroupName} >Créer</Button>
         </div>
 
     )

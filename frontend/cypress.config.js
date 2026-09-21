@@ -4,9 +4,14 @@ export default defineConfig({
   allowCypressEnv: false,
 
   e2e: {
-    baseUrl: 'http://localhost:5173',
+    baseUrl: process.env.CYPRESS_BASE_URL || "http://localhost:5173",
+    defaultCommandTimeout: 10000,
+    specPattern: "cypress/e2e/**/*.cy.js",
+    env: {
+      apiUrl: process.env.CYPRESS_API_URL || process.env.VITE_API_URL || "http://localhost:3000",
+    },
     setupNodeEvents(on, config) {
-      // implement node event listeners here
+      return config;
     },
   },
 });
