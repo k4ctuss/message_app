@@ -166,4 +166,3 @@ Structure prévue :
 
 - [ ] Détail exact du contenu de la review de PR assistée par IA (simple documentation vs automatisation réelle).
 - [ ] Passer le repo en public (plus tard, pas immédiatement) pour débloquer "Required reviewers" sur l'environnement `production` — indisponible sur repo privé en dehors de GitHub Enterprise. En attendant, gate manuel via `workflow_dispatch` sur `cd-prod.yml`.
-- [ ] Rédaction de la description de PR à soumettre aux profs pour validation du plan.
