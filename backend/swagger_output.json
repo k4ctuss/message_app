@@ -157,7 +157,7 @@
         "tags": [
           "Users"
         ],
-        "summary": "Delete User",
+        "summary": "Delete own account, or any user if requester is admin",
         "description": "",
         "produces": [
           "application/json"

@@ -3,6 +3,8 @@ import globals from 'globals'
 import reactHooks from 'eslint-plugin-react-hooks'
 import reactRefresh from 'eslint-plugin-react-refresh'
 import { defineConfig, globalIgnores } from 'eslint/config'
+import pluginCypress from "eslint-plugin-cypress";
+
 
 export default defineConfig([
   globalIgnores(['dist']),
@@ -15,7 +17,7 @@ export default defineConfig([
     ],
     languageOptions: {
       ecmaVersion: 2020,
-      globals: globals.browser,
+      globals: { ...globals.node, ...globals.browser },
       parserOptions: {
         ecmaVersion: 'latest',
         ecmaFeatures: { jsx: true },
@@ -25,5 +27,10 @@ export default defineConfig([
     rules: {
       'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]' }],
     },
+  },
+	// Cypress : seulement les fichiers de test
+  {
+    files: ['cypress/**/*.{js,jsx}', '**/*.cy.{js,jsx}'],
+    extends: [pluginCypress.configs.recommended],
   },
 ])

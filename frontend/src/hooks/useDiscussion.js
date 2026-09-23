@@ -1,6 +1,6 @@
-import { useAuth } from "@/contexts/AuthContext";
-import { useSocket } from "@/contexts/SocketContext";
-import { useCallback, useEffect, useState } from "react";
+import { useAuth } from "@/contexts/auth-context";
+import { useSocket } from "@/contexts/socket-context";
+import { useCallback, useEffect, useState, useRef } from "react";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -12,7 +12,7 @@ export function useDiscussion(gid){
     const [isLoading, setIsLoading] = useState(false);
     const [isRefetching, setIsRefetching] = useState(false);
     const [error, setError] = useState(null);
-    let firstFetch = true;
+    let firstFetch = useRef(true);
 
     const fetchMessages = useCallback(async()=>{
 
@@ -24,8 +24,8 @@ export function useDiscussion(gid){
 
         try{
             setError(null);
-            if(firstFetch){
-                firstFetch = false;
+            if(firstFetch.current){
+                firstFetch.current = false;
                 setIsLoading(true);
             }
 
@@ -80,7 +80,7 @@ export function useDiscussion(gid){
             setIsRefetching(false);
         }
 
-    },[gid, token]);
+    },[gid, token, fetchMessages]);
 
     const sendMessage = useCallback((content)=>{
 
@@ -125,7 +125,7 @@ export function useDiscussion(gid){
         }
 
         
-    },[fetchMessages, socket]);
+    },[fetchMessages, socket, gid]);
 
     return {
         isLoading,

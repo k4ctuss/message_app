@@ -44,6 +44,7 @@
     "@vitejs/plugin-react": "^6.0.0",
     "cypress-real-events": "^1.15.1",
     "eslint": "^9.39.4",
+    "eslint-plugin-cypress": "^7.0.2",
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.5.2",
     "globals": "^17.4.0",

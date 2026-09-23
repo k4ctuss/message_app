@@ -12,7 +12,7 @@ import { Separator } from "../ui/separator";
 export function AdminGroup(){
     let params = useParams();
     const gid = params.gid;
-    const {group, error, loading, addMember, deleteMember, addMemberWS, deleteMemberWS} = useManageGroup(gid);
+    const {group, error, loading, addMemberWS, deleteMemberWS} = useManageGroup(gid);
     const [addMemberId, setAddMemberId] = useState(null);
 
     return(

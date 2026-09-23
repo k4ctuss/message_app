@@ -3,10 +3,11 @@ import {Connection} from '@/views/Connection';
 import { Accueil } from '@/views/Accueil';
 import { AdminGroup } from "@/components/group/AdminGroup";
 import { Discussion } from '@/components/message/Discussion';
-import { AuthContextProvider, useAuth } from '@/contexts/AuthContext';
+import { AuthContextProvider } from '@/contexts/AuthProvider';
+import { useAuth } from '@/contexts/auth-context';
 
 import {HashRouter as Router, Route, Routes} from "react-router-dom";
-import { SocketContextProvider } from './contexts/SocketContext';
+import { SocketContextProvider } from './contexts/SocketProvider';
 
 
 function AppContent() {

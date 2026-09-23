@@ -2,9 +2,9 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { SignUpForm } from '@/components/auth/SignUpForm'
-import { useAuth } from '@/contexts/AuthContext'
+import { useAuth } from '@/contexts/auth-context'
 
-vi.mock('@/contexts/AuthContext', () => ({
+vi.mock('@/contexts/auth-context', () => ({
   useAuth: vi.fn()
 }))
 

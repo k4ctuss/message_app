@@ -1,7 +1,7 @@
 import { Logout } from "@/components/auth/Logout";
 import { ListGroups } from "@/components/group/ListGroups";
 import { Separator } from "@/components/ui/separator";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/contexts/auth-context";
 import { Outlet } from "react-router-dom";
 
 

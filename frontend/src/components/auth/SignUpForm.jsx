@@ -3,7 +3,7 @@ import { FieldLegend, FieldSet, Field, FieldGroup, FieldLabel } from "@/componen
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/contexts/auth-context";
 import { check_email } from "@/lib/utils";
 
 export function SignUpForm({registerCallback}){

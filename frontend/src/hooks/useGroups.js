@@ -1,5 +1,5 @@
-import { useAuth } from "@/contexts/AuthContext";
-import { useSocket } from "@/contexts/SocketContext";
+import { useAuth } from "@/contexts/auth-context";
+import { useSocket } from "@/contexts/socket-context";
 import { useCallback, useEffect, useState } from "react";
 
 const API_URL = import.meta.env.VITE_API_URL;
@@ -76,7 +76,7 @@ export function useGroups(type = "member"){
                 socket.off(`deleteGroup_${type}`, deleteGroup);
             };
         }
-    },[fetchGroups, socket]);
+    },[fetchGroups, socket, type]);
 
     return{
         groups, 

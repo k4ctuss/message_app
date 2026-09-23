@@ -15,8 +15,8 @@ import { Button } from "@/components/ui/button";
 
 import { Spinner } from "@/components/ui/spinner";
 import { useDiscussion } from "@/hooks/useDiscussion";
-import { useAuth } from "@/contexts/AuthContext";
-import { useSocket } from "@/contexts/SocketContext";
+import { useAuth } from "@/contexts/auth-context";
+import { useSocket } from "@/contexts/socket-context";
 import { SendHorizontal } from "lucide-react";
 
 const API_URL = import.meta.env.VITE_API_URL;

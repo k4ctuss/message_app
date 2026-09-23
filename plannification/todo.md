@@ -2,8 +2,8 @@
 
 - [x] update README.md with installation instructions : launch backend setup the first time and then use npm run dev in project directory to launch backend and frontend in dev mode
 - [ ] migrate ci pipepline to github actions (creer projet sonar aussi)
-- [ ] Ajouter Vitest + React Testing Library pour les tests unitaires frontend.
-- [ ] create unit tests for backend and frontend. those shoudl be run in ci and locally with pre-commit hook. 
+- [x] Ajouter Vitest + React Testing Library pour les tests unitaires frontend.
+- [x] create unit tests for backend and frontend. those shoudl be run in ci and locally with pre-commit hook. 
 - [ ] imporve backend integration tests to cover all endpoints and error cases.
 - [ ] fill the dockerfile with step to build and run the backend and frontend in prod mode for deployment. The dockerfile should be used in ci to build the docker image and run the tests in a containerized environment.
 - [ ] supprimer le mock des endpoint des test E2E, normalment un tets E2E devrait tester le backend et le frontend en meme temps, donc il ne faut pas mocker les endpoint du backend. on peut garder le mock pour des test unitaire du frontend sur des composants isolés, mais pas pour les test E2E.

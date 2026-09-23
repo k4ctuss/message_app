@@ -81,7 +81,8 @@ Cypress.Commands.add("addMemberApi", (session, groupId, userId) => {
 
 Cypress.Commands.add("loginUi", (account) => {
   cy.clearAuth();
-  cy.get("#emailLogin").clear().type(account.email);
+  cy.get("#emailLogin").clear();
+	cy.get("#emailLogin").type(account.email);
   cy.get("#passwordLogin").type(account.password, { log: false });
   cy.get("#emailLogin").closest("fieldset").find("button").click();
   cy.contains(`Bonjour ${account.name}`).should("be.visible");

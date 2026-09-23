@@ -1,5 +1,6 @@
-import { createContext, useCallback, useContext, useMemo, useReducer, useEffect } from "react";
+import { useCallback, useMemo, useReducer, useEffect } from "react";
 import { setCookie, getCookie } from "@/lib/utils";
+import { AuthContext } from "@/contexts/auth-context";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
 const AUTH_COOKIE = "ACCESS_TOKEN_AUTH";
@@ -29,7 +30,6 @@ function authReducer(state, action){
 
 }
 
-const AuthContext = createContext(null);
 
 export function AuthContextProvider({children}){
     const [state, dispatch] = useReducer(authReducer, initialState);
@@ -115,8 +115,4 @@ export function AuthContextProvider({children}){
     }), [state, login, isConnected, signUp, checkAuth, logout]);
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-}
-
-export function useAuth(){
-    return useContext(AuthContext);
 }

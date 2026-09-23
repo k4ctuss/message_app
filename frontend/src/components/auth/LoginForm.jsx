@@ -1,18 +1,25 @@
 import { useEffect, useRef, useState } from 'react'
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/contexts/auth-context';
 import { Button } from '@/components/ui/button';
 import {Input} from '@/components/ui/input';
-import { Field, FieldLabel, FieldGroup, FieldLegend, FieldSet, FieldError} from '@/components/ui/field';
+import { Field, FieldLabel, FieldGroup, FieldLegend, FieldSet} from '@/components/ui/field';
 import { Card, CardContent } from '@/components/ui/card';
 import { check_email } from '@/lib/utils';
 
 
 export function LoginForm({registerEmail=""}){
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(registerEmail);
   const [password, setPassword] = useState("");
   const {login, loading} = useAuth();
   const [formError, setFormError] = useState("");
   const pswdRef = useRef(null);
+
+	// focus on password input if register email is provided
+	useEffect(()=>{
+    if(registerEmail){
+      pswdRef.current?.focus();
+    }
+	}, [registerEmail])
 
 
   async function handleLogin(){
@@ -44,11 +51,6 @@ export function LoginForm({registerEmail=""}){
     return "";
   }
 
-  // mise a jour de mail si le register email et changer
-  useEffect(()=>{
-    setEmail(registerEmail);
-    pswdRef.current?.focus();
-  }, [registerEmail])
 
   return(
     <Card>

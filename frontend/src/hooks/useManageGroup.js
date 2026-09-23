@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
-import { useAuth } from "@/contexts/AuthContext";
-import { useSocket } from "@/contexts/SocketContext";
+import { useAuth } from "@/contexts/auth-context";
+import { useSocket } from "@/contexts/socket-context";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -112,7 +112,7 @@ export function useManageGroup(gid){
             }
         });
 
-    },[gid, socket, addMember])
+    },[gid, socket, addMember, fetchGroup])
     
     const deleteMemberWS = useCallback((memberId)=>{
         if(!socket) {
@@ -128,7 +128,7 @@ export function useManageGroup(gid){
             }
         });
 
-    },[gid, socket, deleteMember])
+    },[gid, socket, deleteMember, fetchGroup])
 
 
     useEffect(()=>{
