@@ -11,5 +11,4 @@ router.put('/mygroups/:gid/:uid', user.isUserExist, group.loadGroup, group.addMe
 router.delete('/mygroups/:gid/:uid', user.isUserExist, group.loadGroup, group.deleteMember);
 router.get('/groupsmember', user.isUserExist, group.getJoinedGroups);
 
-
 module.exports = router;

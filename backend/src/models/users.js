@@ -1,5 +1,5 @@
-const Sequelize = require('sequelize')
-const db = require('./database.js')
+const Sequelize = require('sequelize');
+const db = require('./database.js');
 const groups = require('./groups.js');
 const messages = require('./messages.js');
 const users = db.define('users', {
@@ -26,36 +26,36 @@ const users = db.define('users', {
     validate: {
       is: /^[0-9a-z\\/$.]{60}$/i
     }
-  }, 
-  isAdmin:{
+  },
+  isAdmin: {
     type: Sequelize.BOOLEAN,
-    default:false
+    default: false
   }
-}, { timestamps: false })
+}, { timestamps: false });
 
 // association create/own.    user 1-----n group
-users.hasMany(groups, {foreignKey: 'owner', as:'createOrOwn'});
-groups.belongsTo(users, {foreignKey: 'owner', as:'createOrOwn'});
+users.hasMany(groups, { foreignKey: 'owner', as: 'createOrOwn' });
+groups.belongsTo(users, { foreignKey: 'owner', as: 'createOrOwn' });
 
-users.addHook('beforeDestroy', async(user, options)=>{
-  const admin = await users.findOne({where:{isAdmin:true}});
+users.addHook('beforeDestroy', async(user, options) => {
+  const admin = await users.findOne({ where: { isAdmin: true } });
   const transaction = options.transaction;
 
   await groups.update(
-    {owner:admin?.id ?? null},
+    { owner: admin?.id ?? null },
     {
-      where:{owner:user.id},
+      where: { owner: user.id },
       transaction
     }
   );
 });
 
 // association isMember    user n-----n group
-users.belongsToMany(groups, {through: 'isMember', as: 'groups'});
-groups.belongsToMany(users, {through: 'isMember', as: 'members'});
+users.belongsToMany(groups, { through: 'isMember', as: 'groups' });
+groups.belongsToMany(users, { through: 'isMember', as: 'members' });
 
 // association posts    user 1-----n messsage
-users.hasMany(messages, { as:'messages'});
-messages.belongsTo(users, {as:'user'});
+users.hasMany(messages, { as: 'messages' });
+messages.belongsTo(users, { as: 'user' });
 
-module.exports = users
+module.exports = users;

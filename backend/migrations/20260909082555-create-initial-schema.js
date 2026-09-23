@@ -1,7 +1,7 @@
 'use strict';
 
 module.exports = {
-  async up (queryInterface, Sequelize) {
+  async up(queryInterface, Sequelize) {
     await queryInterface.createTable('users', {
       id: {
         type: Sequelize.INTEGER,
@@ -26,7 +26,7 @@ module.exports = {
         type: Sequelize.BOOLEAN,
         defaultValue: false
       }
-    })
+    });
 
     await queryInterface.createTable('groups', {
       id: {
@@ -50,7 +50,7 @@ module.exports = {
         onUpdate: 'CASCADE',
         onDelete: 'SET NULL'
       }
-    })
+    });
 
     await queryInterface.createTable('messages', {
       id: {
@@ -91,7 +91,7 @@ module.exports = {
         type: Sequelize.DATE,
         allowNull: false
       }
-    })
+    });
 
     await queryInterface.createTable('isMember', {
       userId: {
@@ -120,13 +120,13 @@ module.exports = {
         type: Sequelize.DATE,
         allowNull: false
       }
-    })
+    });
   },
 
-  async down (queryInterface) {
-    await queryInterface.dropTable('isMember')
-    await queryInterface.dropTable('messages')
-    await queryInterface.dropTable('groups')
-    await queryInterface.dropTable('users')
+  async down(queryInterface) {
+    await queryInterface.dropTable('isMember');
+    await queryInterface.dropTable('messages');
+    await queryInterface.dropTable('groups');
+    await queryInterface.dropTable('users');
   }
-}
+};

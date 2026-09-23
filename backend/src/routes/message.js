@@ -4,7 +4,6 @@ const groupCtr = require('../controllers/group');
 const messageCtr = require('../controllers/message');
 const userCtr = require('../controllers/user');
 
-
 router.get('/messages/:gid', userCtr.isUserExist, groupCtr.loadGroup, messageCtr.verifMembership, messageCtr.getMessages);
 router.post('/messages/:gid', userCtr.isUserExist, groupCtr.loadGroup, messageCtr.verifMembership, messageCtr.newMessage);
 
