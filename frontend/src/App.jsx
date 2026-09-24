@@ -1,45 +1,49 @@
-import './App.css'
-import {Connection} from '@/views/Connection';
-import { Accueil } from '@/views/Accueil';
+import "./App.css";
+import { Connection } from "@/views/Connection";
+import { Accueil } from "@/views/Accueil";
 import { AdminGroup } from "@/components/group/AdminGroup";
-import { Discussion } from '@/components/message/Discussion';
-import { AuthContextProvider } from '@/contexts/AuthProvider';
-import { useAuth } from '@/contexts/auth-context';
+import { Discussion } from "@/components/message/Discussion";
+import { AuthContextProvider } from "@/contexts/AuthProvider";
+import { useAuth } from "@/contexts/auth-context";
 
-import {HashRouter as Router, Route, Routes} from "react-router-dom";
-import { SocketContextProvider } from './contexts/SocketProvider';
-
+import { HashRouter as Router, Route, Routes } from "react-router-dom";
+import { SocketContextProvider } from "./contexts/SocketProvider";
 
 function AppContent() {
-  const { isConnected } = useAuth();
+    const { isConnected } = useAuth();
 
-  return (
-    <div className="flex min-h-svh w-full items-center justify-center p-6 md:p-10">
-      {isConnected() ? (
-        <Router>
-          <Routes>
-            <Route path="/" element={<Accueil />} >
-              <Route path="groups/:gid" element={<AdminGroup/>}/>
-              <Route path="discussion/:gid/:name" element={<Discussion/>} />
-            </Route>
-          </Routes>
-        </Router>
-      )
-      : 
-      <Connection />
-      }
-    </div>
-  );
+    return (
+        <div className="flex min-h-svh w-full items-center justify-center p-6 md:p-10">
+            {isConnected() ? (
+                <Router>
+                    <Routes>
+                        <Route path="/" element={<Accueil />}>
+                            <Route
+                                path="groups/:gid"
+                                element={<AdminGroup />}
+                            />
+                            <Route
+                                path="discussion/:gid/:name"
+                                element={<Discussion />}
+                            />
+                        </Route>
+                    </Routes>
+                </Router>
+            ) : (
+                <Connection />
+            )}
+        </div>
+    );
 }
 
 function App() {
-
-  return (
-    <AuthContextProvider>
-      <SocketContextProvider>
-        <AppContent />
-      </SocketContextProvider>
-    </AuthContextProvider>  )
+    return (
+        <AuthContextProvider>
+            <SocketContextProvider>
+                <AppContent />
+            </SocketContextProvider>
+        </AuthContextProvider>
+    );
 }
 
-export default App
+export default App;

@@ -1,12 +1,26 @@
 {
-  "scripts": {
-    "dev": "docker compose --env-file backend/.env --profile db up -d && concurrently -k -n backend,frontend -c blue,green \"npm --prefix backend run startdev\" \"npm --prefix frontend run dev\""
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/k4ctuss/message_app.git"
-  },
-  "devDependencies": {
-    "concurrently": "^10.0.5"
-  }
+    "scripts": {
+        "dev": "docker compose --env-file backend/.env --profile db up -d && concurrently -k -n backend,frontend -c blue,green \"npm --prefix backend run startdev\" \"npm --prefix frontend run dev\"",
+        "prepare": "husky"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/k4ctuss/message_app.git"
+    },
+    "devDependencies": {
+        "concurrently": "^10.0.5",
+        "husky": "^9.1.7",
+        "lint-staged": "^16.4.0",
+        "prettier": "^3.9.9"
+    },
+    "lint-staged": {
+        "frontend/**/*.{js,jsx}": [
+            "prettier --write",
+            "bash -c 'cd frontend && npx eslint --fix'"
+        ],
+        "backend/**/*.{js,cjs,mjs}": [
+            "prettier --write",
+            "bash -c 'cd backend && npx eslint --fix'"
+        ]
+    }
 }

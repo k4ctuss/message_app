@@ -1,33 +1,39 @@
 ## Sonar cube badges
+
 [![Quality gate](https://sonarqube.ensimag.fr/api/project_badges/quality_gate?project=TPFullstack_nolan_blanc&token=sqb_75d1412bd6b7a8827ee2cacbab7b58ac1eb02ee3)](https://sonarqube.ensimag.fr/dashboard?id=TPFullstack_nolan_blanc)
 [![Bugs](https://sonarqube.ensimag.fr/api/project_badges/measure?project=TPFullstack_nolan_blanc&metric=bugs&token=sqb_75d1412bd6b7a8827ee2cacbab7b58ac1eb02ee3)](https://sonarqube.ensimag.fr/dashboard?id=TPFullstack_nolan_blanc)
 [![Coverage](https://sonarqube.ensimag.fr/api/project_badges/measure?project=TPFullstack_nolan_blanc&metric=coverage&token=sqb_75d1412bd6b7a8827ee2cacbab7b58ac1eb02ee3)](https://sonarqube.ensimag.fr/dashboard?id=TPFullstack_nolan_blanc)
 
+---
+
+title: Messaging App  
+author:
+
+- Blanc Nolan
 
 ---
-title: Messaging App  
-author:  
-- Blanc Nolan
---- 
 
 ## Installation
 
 Dev mode (docker compose needed):
 First create your .env files both in backend and frontend directories, you can use the .env.example files as a template.
 To launch the backend and frontend in dev mode, you can use the following command in the project directory:
+
 ```sh
   npm run dev
 ```
+
 This commande will create or restart a docker container for the postgres database, and then launch the backend and frontend in dev mode. The backend will be accessible at http://localhost:3000/api and the frontend at http://localhost:5173 and doc at http://localhost:3000/docs. The backend will be automatically restarted if you modify the code, and the frontend will be automatically reloaded if you modify the code.
 
 > [!TIP] If you want to seed or reset the database, you can call the command with the following environment variables:
->```sh
+>
+> ```sh
 >  DB_SEED=true npm run dev # to seed the database
 >  DB_RESET=true DB_SEED=true npm run dev # to reset and seed the database
->```
+> ```
 
 prod (on aws):
-  TODO
+TODO
 
 ## Architecture du code
 
@@ -102,7 +108,7 @@ class Group{
 User "1" -- "n" Message : posts
 Group "1" -- "n" Message : contains
 
-User "n" -- "n"  Group : is member 
+User "n" -- "n"  Group : is member
 User "1" -- "n"  Group : create and own
 ```
 
@@ -112,8 +118,8 @@ backend
 |   `-- config.js
 |-- jest.config.js
 |-- jest.setup.js
-|-- migrations/       # folder containing the migration files for the database 
-|-- seeders/          # folder containing the seed files for the database 
+|-- migrations/       # folder containing the migration files for the database
+|-- seeders/          # folder containing the seed files for the database
 |-- package.json
 |-- setup-test.sh     # script to setup the test database before running the tests
 `-- src
@@ -142,7 +148,7 @@ backend
     |   |-- logger.js
     |   |-- swagger.js
     |   `-- updatedb.js
-    `-- websocket   
+    `-- websocket
         `-- websocket.js  # folder containing all websocket functions
 ```
 
@@ -160,7 +166,7 @@ Ici vous décrivez les fonctionnalités souhaitées et celles effectivement mise
 
 ### Cas d'usage
 
-A modifier/compléter 
+A modifier/compléter
 
 ```plantuml
 @startuml
@@ -211,7 +217,7 @@ header {- Alice@aol.fr | [Se déconnecter] }
 **Ceux que j'administre**
 * Club Gaming
 * Running
-"<i>nom du nouveau groupe" 
+"<i>nom du nouveau groupe"
  [Créer]
 }|
 {^"Discussion sur le groupe <b>Club Gaming"
@@ -238,8 +244,6 @@ A compléter
 Donner le lien vers la documentation swagger et/ou faire un tableau récapitulant l'API
 
 A compléter
-
-
 
 ## Test
 
