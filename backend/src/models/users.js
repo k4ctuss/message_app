@@ -41,7 +41,7 @@ const users = db.define(
 users.hasMany(groups, { foreignKey: "owner", as: "createOrOwn" });
 groups.belongsTo(users, { foreignKey: "owner", as: "createOrOwn" });
 
-users.addHook("beforeDestroy", async (user, options) => {
+users.addHook("beforeDestroy", async(user, options) => {
     const admin = await users.findOne({ where: { isAdmin: true } });
     const transaction = options.transaction;
 

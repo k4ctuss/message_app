@@ -13,7 +13,7 @@ const TOKEN_UNKNOW_USER = jws.sign({
     secret: process.env.TOKENSECRET,
 });
 
-test("Test if user can log in and list users", async () => {
+test("Test if user can log in and list users", async() => {
     let response = await request(app).post("/login").send(USER_TEST_LOGIN);
     expect(response.statusCode).toBe(200);
     expect(response.body).toHaveProperty("token");
@@ -25,7 +25,7 @@ test("Test if user can log in and list users", async () => {
     expect(response.body.users.length).toBeGreaterThan(0);
 });
 
-test("Test user sign up", async () => {
+test("Test user sign up", async() => {
     let response = await request(app)
         .post("/register")
         .send({ email: "test@test.test", name: "test", password: "123456" });
@@ -44,28 +44,24 @@ test("Test user sign up", async () => {
     expect(response.statusCode).toBe(400);
     expect(response.body.message).toBe("You must specify the name and email");
 
-    response = await request(app)
-        .post("/register")
-        .send({
-            email: "test@test.test",
-            name: "test",
-            password: "1Mot2passe*",
-        });
+    response = await request(app).post("/register").send({
+        email: "test@test.test",
+        name: "test",
+        password: "1Mot2passe*",
+    });
     // expect(response.statusCode).toBe(200);
     expect(response.body.message).toBe("User Added");
 
-    response = await request(app)
-        .post("/register")
-        .send({
-            email: "test@test.test",
-            name: "test-deux",
-            password: "1Mot2passe*plusfort",
-        });
+    response = await request(app).post("/register").send({
+        email: "test@test.test",
+        name: "test-deux",
+        password: "1Mot2passe*plusfort",
+    });
     expect(response.statusCode).toBe(400);
     expect(response.body.message).toBe("Validation error"); // pass de compte avec le même mot de pass
 });
 
-test("Test user login", async () => {
+test("Test user login", async() => {
     let response = await request(app)
         .post("/login")
         .send({ password: USER_TEST_LOGIN.password });
@@ -100,7 +96,7 @@ test("Test user login", async () => {
     expect(response.body.message).toBe("Login/Password ok");
 });
 
-test("Test list users", async () => {
+test("Test list users", async() => {
     let response = await request(app).post("/login").send(USER_TEST_LOGIN);
     const { token } = response.body;
 
@@ -127,7 +123,7 @@ test("Test list users", async () => {
     expect(response.body.message).toBe("Returning users");
 });
 
-test("user can delete own account but not another user", async () => {
+test("user can delete own account but not another user", async() => {
     const stamp = Date.now();
     const selfUser = {
         name: "Self One",
@@ -173,7 +169,7 @@ test("user can delete own account but not another user", async () => {
     expect(response.statusCode).toBe(200);
 });
 
-test("Test update password", async () => {
+test("Test update password", async() => {
     let response = await request(app)
         .post("/login")
         .send({ email: "nolan.blanc@grenoble-inp.org", password: "123456" });

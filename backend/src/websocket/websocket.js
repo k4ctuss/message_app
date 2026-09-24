@@ -46,7 +46,7 @@ function initWebSocket(io) {
         }
     });
 
-    io.on("connection", async (socket) => {
+    io.on("connection", async(socket) => {
         // DEBUGING
         socket.onAnyOutgoing((eventName, ...args) => {
             console.log(`[#${socket.id}] [OUT]`, eventName, ...args);
@@ -69,7 +69,7 @@ function initWebSocket(io) {
             console.log(`User ${socket.data.login} is Admin`);
         }
 
-        socket.on("joinDiscussion", async (gid, callback) => {
+        socket.on("joinDiscussion", async(gid, callback) => {
             const user = socket.data.user;
             const group = await loadGroup(gid);
 
@@ -97,7 +97,7 @@ function initWebSocket(io) {
         });
 
         // ------- discussion ---------- //
-        socket.on("newMessage", async (data, callback) => {
+        socket.on("newMessage", async(data, callback) => {
             const { gid, content } = data;
             console.log("new message: " + content);
 
@@ -160,7 +160,7 @@ function initWebSocket(io) {
 
         // ------- groups ---------- //
         // ajout d'un membre
-        socket.on("addMember", async (data, callback) => {
+        socket.on("addMember", async(data, callback) => {
             if (!(await isUserExist(socket.data.user.id))) {
                 return callback({ status: "NOK", message: "Access Forbidden" });
             }
@@ -191,7 +191,7 @@ function initWebSocket(io) {
         });
 
         // suppression d'un membre
-        socket.on("deleteMember", async (data, callback) => {
+        socket.on("deleteMember", async(data, callback) => {
             if (!(await isUserExist(socket.data.user.id))) {
                 return callback({ status: "NOK", message: "Access Forbidden" });
             }

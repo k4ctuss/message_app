@@ -6,7 +6,7 @@ let outsiderTK;
 let adminGroupId;
 let createdMessageContent;
 
-beforeAll(async () => {
+beforeAll(async() => {
     const adminCreds = {
         email: "nolan.blanc@grenoble-inp.org",
         password: "123456",
@@ -61,7 +61,7 @@ beforeAll(async () => {
     createdMessageContent = `message test ${Date.now()}`;
 });
 
-test("Test create message", async () => {
+test("Test create message", async() => {
     let response = await request(app)
         .post(`/api/messages/${adminGroupId}`)
         .set("x-access-token", adminTK);
@@ -89,7 +89,7 @@ test("Test create message", async () => {
     expect(response.body.message).toBe("message added");
 });
 
-test("Test get messages", async () => {
+test("Test get messages", async() => {
     let response = await request(app).get(`/api/messages/${adminGroupId}`);
     expect(response.statusCode).toBe(403);
     expect(response.body.message).toBe("Token missing");

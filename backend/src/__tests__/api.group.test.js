@@ -11,7 +11,7 @@ let adminUserId;
 let chiefGroupId;
 
 /* ----------  set up for the group --------------- */
-beforeAll(async () => {
+beforeAll(async() => {
     const credentials = [
         { email: "nogroup@test.test", password: "Agreat1$password" },
         { email: "chief@test.test", password: "Agreat1$password" },
@@ -56,7 +56,7 @@ beforeAll(async () => {
     adminUserId = usersByMail["nolan.blanc@grenoble-inp.org"].id;
 });
 
-test("Test create groups", async () => {
+test("Test create groups", async() => {
     let response = await request(app)
         .post("/api/mygroups")
         .set("x-access-token", chiefUserTK)
@@ -88,7 +88,7 @@ test("Test create groups", async () => {
     chiefGroupId = chiefGroup.id;
 });
 
-test("Test list all my groups (with admin also).", async () => {
+test("Test list all my groups (with admin also).", async() => {
     let response = await request(app)
         .get("/api/mygroups")
         .set("x-access-token", chiefUserTK);
@@ -114,7 +114,7 @@ test("Test list all my groups (with admin also).", async () => {
     expect(response.body.groups.length).toBe(2);
 });
 
-test(`Test add member in group id ${chiefGroupId}`, async () => {
+test(`Test add member in group id ${chiefGroupId}`, async() => {
     let response = await request(app)
         .put(`/api/mygroups/${chiefGroupId}/${memberUserId}`)
         .set("x-access-token", memberUserTK);
@@ -134,7 +134,7 @@ test(`Test add member in group id ${chiefGroupId}`, async () => {
     expect(response.body.message).toBe("New member added");
 });
 
-test(`Test list members in group id ${chiefGroupId}`, async () => {
+test(`Test list members in group id ${chiefGroupId}`, async() => {
     let response = await request(app)
         .get(`/api/mygroups/${chiefGroupId}`)
         .set("x-access-token", memberUserTK);
@@ -163,7 +163,7 @@ test(`Test list members in group id ${chiefGroupId}`, async () => {
     expect(response.body.message).toBe("Forbidden");
 });
 
-test("Test groupsmember endpoint", async () => {
+test("Test groupsmember endpoint", async() => {
     let response = await request(app)
         .get("/api/groupsmember")
         .set("x-access-token", memberUserTK);
@@ -194,7 +194,7 @@ test("Test groupsmember endpoint", async () => {
     expect(response.body.groups.some((g) => g.id === 1)).toBe(true);
 });
 
-test("Test delete member in group", async () => {
+test("Test delete member in group", async() => {
     let response = await request(app)
         .delete(`/api/mygroups/${chiefGroupId}/${chiefUserId}`)
         .set("x-access-token", memberUserTK);
@@ -229,7 +229,7 @@ test("Test delete member in group", async () => {
     expect(response.statusCode).toBe(200);
 });
 
-test("Test delete group", async () => {
+test("Test delete group", async() => {
     let response = await request(app)
         .delete(`/api/mygroups/${chiefGroupId}`)
         .set("x-access-token", memberUserTK);

@@ -4,29 +4,26 @@ import { useCallback, useEffect, useState } from "react";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
+async function requestGroups(type, token) {
+    const endpoint = `${API_URL}/api/${type === "admin" ? "mygroups" : "groupsmember"}`;
+    const res = await fetch(endpoint, { headers: { "x-access-token": token } });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message);
+    return data.groups;
+}
+
 export function useGroups(type = "member") {
     const { token } = useAuth();
     const { socket } = useSocket();
 
     const [groups, setGroups] = useState([]);
     const [error, setError] = useState(null);
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(true);
 
     const fetchGroups = useCallback(async () => {
         try {
+            setGroups(await requestGroups(type, token));
             setError(null);
-            setLoading(true);
-            const endpoint = `${API_URL}/api/${type === "admin" ? "mygroups" : "groupsmember"}`;
-            const response = await fetch(endpoint, {
-                headers: { "x-access-token": token },
-            });
-            if (response.ok) {
-                const data = await response.json();
-                setGroups(data.groups);
-            } else {
-                const error = await response.json();
-                setError(error.message);
-            }
         } catch (err) {
             setError(
                 err.message ||
@@ -72,26 +69,41 @@ export function useGroups(type = "member") {
         [token, fetchGroups],
     );
 
-    function addGroup(group) {
-        setGroups((prev) => [...prev, group]);
-    }
-
-    function deleteGroup(group) {
-        console.log("delete group");
-        setGroups((prev) => prev.filter((g) => g.id !== group.id));
-    }
+    // chargement initial : inline + ignore → lint content ET race gérée
+    useEffect(() => {
+        let ignore = false;
+        requestGroups(type, token)
+            .then((g) => {
+                if (!ignore) {
+                    setGroups(g);
+                    setError(null);
+                }
+            })
+            .catch((e) => {
+                if (!ignore) setError(e.message || "Erreur de chargement");
+            })
+            .finally(() => {
+                if (!ignore) setLoading(false);
+            });
+        return () => {
+            ignore = true;
+        };
+    }, [type, token]);
 
     useEffect(() => {
-        fetchGroups();
-        if (socket) {
-            socket.on(`addedToGroup_${type}`, addGroup);
-            socket.on(`deleteGroup_${type}`, deleteGroup);
-            return () => {
-                socket.off(`addedToGroup_${type}`, addGroup);
-                socket.off(`deleteGroup_${type}`, deleteGroup);
-            };
-        }
-    }, [fetchGroups, socket, type]);
+        if (!socket) return;
+
+        const addGroup = (group) => setGroups((prev) => [...prev, group]);
+        const deleteGroup = (group) =>
+            setGroups((prev) => prev.filter((g) => g.id !== group.id));
+
+        socket.on(`addedToGroup_${type}`, addGroup);
+        socket.on(`deleteGroup_${type}`, deleteGroup);
+        return () => {
+            socket.off(`addedToGroup_${type}`, addGroup);
+            socket.off(`deleteGroup_${type}`, deleteGroup);
+        };
+    }, [socket, type]);
 
     return {
         groups,
