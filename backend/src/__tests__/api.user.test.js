@@ -4,15 +4,13 @@ const jws = require("jws");
 const { randomUUID } = require("crypto");
 
 const {
-	STRONG_PASSWORD,
-	uniqueEmail,
-	findUserById,
-	findUsersByEmail,
-	createTestUser,
-	cleanUp
-} = require("./helper")
-
-
+    STRONG_PASSWORD,
+    uniqueEmail,
+    findUserById,
+    findUsersByEmail,
+    createTestUser,
+    cleanUp,
+} = require("./helper");
 
 const TOKEN_UNKNOW_USER = jws.sign({
     header: { alg: "HS256" },
@@ -30,19 +28,19 @@ const createdEmails = new Set();
 // modifient ou suppriment un user créent le leur.
 let sharedUser;
 
-beforeAll(async () => {
+beforeAll(async() => {
     sharedUser = await createTestUser("shared", createdEmails);
 });
 
-afterAll(async()=>{
-	await cleanUp(createdEmails, null);
+afterAll(async() => {
+    await cleanUp(createdEmails, null);
 });
 
 // ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
 
-test("Test user sign up", async () => {
+test("Test user sign up", async() => {
     const email = uniqueEmail("signup", createdEmails);
 
     // Mot de passe faible
@@ -103,7 +101,7 @@ test("Test user sign up", async () => {
     expect(response.statusCode).toBe(403);
 });
 
-test("Test if user can log in and list users", async () => {
+test("Test if user can log in and list users", async() => {
     let response = await request(app)
         .post("/login")
         .send({ email: sharedUser.email, password: sharedUser.password });
@@ -118,18 +116,22 @@ test("Test if user can log in and list users", async () => {
     expect(response.body.users.length).toBeGreaterThan(0);
 });
 
-test("Test user login", async () => {
+test("Test user login", async() => {
     let response = await request(app)
         .post("/login")
         .send({ password: sharedUser.password });
     expect(response.statusCode).toBe(400);
-    expect(response.body.message).toBe("You must specify the email and password");
+    expect(response.body.message).toBe(
+        "You must specify the email and password",
+    );
 
     response = await request(app)
         .post("/login")
         .send({ email: sharedUser.email });
     expect(response.statusCode).toBe(400);
-    expect(response.body.message).toBe("You must specify the email and password");
+    expect(response.body.message).toBe(
+        "You must specify the email and password",
+    );
 
     const unknownEmail = `unknown-${randomUUID()}@test.test`;
     expect(await findUsersByEmail(unknownEmail)).toHaveLength(0);
@@ -153,7 +155,7 @@ test("Test user login", async () => {
     expect(response.body.message).toBe("Login/Password ok");
 });
 
-test("Test list users", async () => {
+test("Test list users", async() => {
     let response = await request(app).get("/api/users");
     expect(response.statusCode).toBe(403);
     expect(response.body.message).toBe("Token missing");
@@ -177,9 +179,13 @@ test("Test list users", async () => {
     expect(response.body.message).toBe("Returning users");
 });
 
-test("user can delete own account but not another user", async () => {
-    const self = await createTestUser("self-one", createdEmails, { name: "Self One" });
-    const other = await createTestUser("self-two", createdEmails, { name: "Self Two" });
+test("user can delete own account but not another user", async() => {
+    const self = await createTestUser("self-one", createdEmails, {
+        name: "Self One",
+    });
+    const other = await createTestUser("self-two", createdEmails, {
+        name: "Self Two",
+    });
 
     // Les deux existent avant de commencer
     expect(await findUserById(self.id)).not.toBeNull();
@@ -211,7 +217,7 @@ test("user can delete own account but not another user", async () => {
     expect(await findUserById(other.id)).toBeNull();
 });
 
-test("Test update password", async () => {
+test("Test update password", async() => {
     // User dédié : on modifie son mot de passe sans impacter les autres tests
     const user = await createTestUser("password", createdEmails);
     const newPassword = "myNewPassword&1234";
@@ -240,7 +246,9 @@ test("Test update password", async () => {
         .put("/api/password")
         .set("x-access-token", user.token);
     expect(response.statusCode).toBe(400);
-    expect(response.body.message).toBe("User not connected or password not provided");
+    expect(response.body.message).toBe(
+        "User not connected or password not provided",
+    );
 
     response = await request(app)
         .put("/api/password")
