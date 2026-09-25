@@ -4,6 +4,8 @@
     "description": "backendsqlite is the ultimate backend solution",
     "main": "src/server.js",
     "scripts": {
+        "lint": "eslint .",
+        "lint:fix": "eslint . --fix",
         "setup": "npm install && npm run doc && npm run db:reset",
         "updatedb": "node src/util/updatedb.js",
         "db:reset": "DB_RESET=true DB_SEED=true npm run updatedb",
@@ -46,15 +48,18 @@
         "swagger-ui-express": "^4.3.0"
     },
     "devDependencies": {
+        "@eslint/js": "^10.0.1",
         "concurrently": "^10.0.5",
-        "eslint": "^7.32.0",
-        "eslint-config-standard": "^16.0.3",
-        "eslint-plugin-cypress": "^2.12.1",
-        "eslint-plugin-import": "^2.25.4",
-        "eslint-plugin-node": "^11.1.0",
-        "eslint-plugin-promise": "^5.2.0",
+        "eslint": "^10.11.0",
+        "globals": "^17.12.0",
         "jest": "^30.5.1",
         "sequelize-cli": "^6.6.5",
         "supertest": "^6.2.2"
+    },
+    "//uuid-override": "TEMPORAIRE — Sequelize 6 dépend d'un uuid vulnérable (GHSA-w5hq-g745-h8pq). On force uuid ^11.1.1 (dernière branche CommonJS + patchée) le temps que Sequelize corrige. Voir https://github.com/sequelize/sequelize/issues/18238 — À SUPPRIMER une fois Sequelize à jour (npm audit doit rester clean sans l'override).",
+    "overrides": {
+        "sequelize": {
+            "uuid": "^11.1.1"
+        }
     }
 }

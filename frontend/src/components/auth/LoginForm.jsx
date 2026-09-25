@@ -1,78 +1,111 @@
-import { useEffect, useRef, useState } from 'react'
-import { useAuth } from '@/contexts/AuthContext';
-import { Button } from '@/components/ui/button';
-import {Input} from '@/components/ui/input';
-import { Field, FieldLabel, FieldGroup, FieldLegend, FieldSet, FieldError} from '@/components/ui/field';
-import { Card, CardContent } from '@/components/ui/card';
+import { useEffect, useRef, useState } from "react";
+import { useAuth } from "@/contexts/auth-context";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+    Field,
+    FieldLabel,
+    FieldGroup,
+    FieldLegend,
+    FieldSet,
+} from "@/components/ui/field";
+import { Card, CardContent } from "@/components/ui/card";
+import { check_email } from "@/lib/utils";
 
+export function LoginForm({ registerEmail = "" }) {
+    const [email, setEmail] = useState(registerEmail);
+    const [password, setPassword] = useState("");
+    const { login, loading } = useAuth();
+    const [formError, setFormError] = useState("");
+    const pswdRef = useRef(null);
 
+    // focus on password input if register email is provided
+    useEffect(() => {
+        if (registerEmail) {
+            pswdRef.current?.focus();
+        }
+    }, [registerEmail]);
 
-export function LoginForm({registerEmail=""}){
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const {login, loading} = useAuth();
-  const [formError, setFormError] = useState("");
-  const pswdRef = useRef(null);
+    async function handleLogin() {
+        const validationError = verifFields();
+        if (validationError.length !== 0) {
+            setFormError(validationError);
+            return;
+        }
 
+        const result = await login(email.trim(), password.trim());
+        if (!result.success) {
+            setFormError(result.message);
+            return;
+        }
 
-  async function handleLogin(){
-    const validationError = verifFields();
-    if(validationError.length !== 0){
-      setFormError(validationError);
-      return;
+        setFormError("");
     }
 
-    const result = await login(email.trim(), password.trim());
-    if(!result.success){
-      setFormError(result.message);
-      return;
+    function verifFields() {
+        if (!email && !password) return "";
+
+        if (!check_email(email)) {
+            return "Mail Invalide !";
+        }
+        if (password.length < 6) {
+            return "Mot de passe trop court !";
+        }
+        return "";
     }
 
-    setFormError("");
-  }
-
-  function verifFields(){
-    if(!email && !password)
-      return "";
-
-    if(!/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,})+$/.test(email)){
-      return "Mail Invalide !";
-    }
-    if (password.length<6) {
-      return "Mot de passe trop court !";
-    }
-    return "";
-  }
-
-  // mise a jour de mail si le register email et changer
-  useEffect(()=>{
-    setEmail(registerEmail);
-    pswdRef.current?.focus();
-  }, [registerEmail])
-
-  return(
-    <Card>
-      <CardContent>
-        <FieldSet>
-          <FieldLegend>Se Connecter</FieldLegend>
-          <FieldGroup>
-            <Field>
-              <FieldLabel htmlFor="emailLogin">Email</FieldLabel>
-              <Input  id="emailLogin" type="email" placeholder="mail@example.fr" value={email} required onChange={(e)=>{setEmail(e.target.value); setFormError("");}}/>
-            </Field>
-            <Field>
-              <FieldLabel htmlFor="passwordLogin">Mot de Passe</FieldLabel>
-              <Input ref={pswdRef} id="passwordLogin" type="password" value={password} 
-              required 
-              onChange={(e)=>{setPassword(e.target.value); setFormError("");}}
-              onKeyDown={e=>{if(e.key === "Enter") handleLogin()}}
-              />
-            </Field>
-            <Button type="button" disabled={!email || !password} onClick={handleLogin}>{loading?"connection...":"OK"}</Button>
-          </FieldGroup>
-          <span style={{color:'red'}}>{verifFields() || formError}</span>
-        </FieldSet>
-      </CardContent>
-    </Card>
-  )
+    return (
+        <Card>
+            <CardContent>
+                <FieldSet>
+                    <FieldLegend>Se Connecter</FieldLegend>
+                    <FieldGroup>
+                        <Field>
+                            <FieldLabel htmlFor="emailLogin">Email</FieldLabel>
+                            <Input
+                                id="emailLogin"
+                                type="email"
+                                placeholder="mail@example.fr"
+                                value={email}
+                                required
+                                onChange={(e) => {
+                                    setEmail(e.target.value);
+                                    setFormError("");
+                                }}
+                            />
+                        </Field>
+                        <Field>
+                            <FieldLabel htmlFor="passwordLogin">
+                                Mot de Passe
+                            </FieldLabel>
+                            <Input
+                                ref={pswdRef}
+                                id="passwordLogin"
+                                type="password"
+                                value={password}
+                                required
+                                onChange={(e) => {
+                                    setPassword(e.target.value);
+                                    setFormError("");
+                                }}
+                                onKeyDown={(e) => {
+                                    if (e.key === "Enter") handleLogin();
+                                }}
+                            />
+                        </Field>
+                        <Button
+                            type="button"
+                            disabled={!email || !password}
+                            onClick={handleLogin}
+                        >
+                            {loading ? "connection..." : "OK"}
+                        </Button>
+                    </FieldGroup>
+                    <span style={{ color: "red" }}>
+                        {verifFields() || formError}
+                    </span>
+                </FieldSet>
+            </CardContent>
+        </Card>
+    );
 }

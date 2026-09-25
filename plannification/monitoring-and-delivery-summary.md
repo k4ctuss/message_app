@@ -10,20 +10,21 @@ Migration en cours : remote GitLab → GitHub effectuée, la CI GitLab n'a pas e
 
 ## 2. Mapping avec la grille de critères
 
-| Critère | Comment il est couvert |
-|---|---|
-| CI (build + tests automatisés) | GitHub Actions : lint, tests unitaires, build Docker, SonarQube |
-| CD (déploiement automatisé) | GitHub Actions + Terraform, déploiement différencié par environnement |
-| Infrastructure as Code | Terraform (VM, réseau/security groups, backend S3) |
-| Plateforme de dev moderne | GitHub, branch protection, review obligatoire, CODEOWNERS |
-| Qualité / sécurité | SonarQube (analyse statique) + Dependabot + secret scanning + `npm audit` |
-| Usage documenté de l'IA | `AI_USAGE.md` + éventuelle review de PR automatisée par IA |
-| Repo fonctionnel | Ce repo, avec toute la config/doc nécessaire |
-| Rapport (2-3 pages) | Architecture, justification des choix, interactions, limites |
+| Critère                        | Comment il est couvert                                                    |
+| ------------------------------ | ------------------------------------------------------------------------- |
+| CI (build + tests automatisés) | GitHub Actions : lint, tests unitaires, build Docker, SonarQube           |
+| CD (déploiement automatisé)    | GitHub Actions + Terraform, déploiement différencié par environnement     |
+| Infrastructure as Code         | Terraform (VM, réseau/security groups, backend S3)                        |
+| Plateforme de dev moderne      | GitHub, branch protection, review obligatoire, CODEOWNERS                 |
+| Qualité / sécurité             | SonarQube (analyse statique) + Dependabot + secret scanning + `npm audit` |
+| Usage documenté de l'IA        | `AI_USAGE.md` + éventuelle review de PR automatisée par IA                |
+| Repo fonctionnel               | Ce repo, avec toute la config/doc nécessaire                              |
+| Rapport (2-3 pages)            | Architecture, justification des choix, interactions, limites              |
 
 ## 3. Les environnements
 
 ### 3.1 Local
+
 - Déclencheur : à chaque commit/modification sur le poste du développeur.
 - Durée de vie : permanente (poste de travail).
 - Infra : `docker-compose.yml` avec uniquement le service **Postgres** (port mappé sur `localhost:5432`) ; backend et frontend tournent nativement via `npm run dev` (nodemon/vite) pour garder un hot-reload rapide sans reconstruire d'image à chaque sauvegarde.
@@ -32,6 +33,7 @@ Migration en cours : remote GitLab → GitHub effectuée, la CI GitLab n'a pas e
 - Monitoring : aucun.
 
 ### 3.2 Dev — étape de validation, pas un environnement (durée de vie = durée du job CI)
+
 - Déclencheur : push/PR vers `dev`.
 - Ce n'est pas un environnement au sens propre : rien n'est déployé nulle part, rien n'est accessible. C'est une étape de validation automatisée qui monte des conteneurs jetables dans le runner, teste, puis disparaît avec lui.
 - Durée de vie : **uniquement le temps du job CI**. Pas d'accès manuel prévu : si un ingénieur a besoin d'explorer/débugger, il checkout la branche et lance l'app en local.
@@ -43,6 +45,7 @@ Migration en cours : remote GitLab → GitHub effectuée, la CI GitLab n'a pas e
 - Hébergement : aucun (tout tourne dans le runner GitHub Actions, jamais sur le cloud).
 
 ### 3.3 Staging — permanent, infra identique à la prod
+
 - Déclencheur de déploiement : merge/PR sur `main`.
 - Durée de vie : permanente.
 - Infra : **strictement le même module Terraform que la prod**, juste une variable d'environnement différente (même taille de VM, mêmes conteneurs).
@@ -53,6 +56,7 @@ Migration en cours : remote GitLab → GitHub effectuée, la CI GitLab n'a pas e
 - Hébergement : AWS (EC2 + RDS). Le crédit de 200$ AWS disponible couvre largement les trois environnements sans avoir besoin de jongler entre providers.
 
 ### 3.4 Prod — permanente
+
 - Déclencheur : release/tag.
 - Durée de vie : permanente, 24/7.
 - Infra : 1 VM AWS (EC2 t2/t3.micro, reste sous les 750h/mois gratuites puisque c'est la seule instance permanente sur ce compte).
@@ -66,15 +70,15 @@ Migration en cours : remote GitLab → GitHub effectuée, la CI GitLab n'a pas e
 
 ### 3.5 Tableau récapitulatif
 
-| | Local | Dev | Staging | Prod |
-|---|---|---|---|---|
-| Déclencheur | commit | push/PR → `dev` | PR/merge → `main` | release/tag |
-| Durée de vie | permanent (poste) | éphémère (durée du job CI) | permanent | permanent |
-| BDD | Postgres (local, natif+docker) | Postgres (conteneur, jetable) | RDS Postgres (managé) | RDS Postgres (managé) |
-| Tests | unitaires | intégration | E2E (Cypress) + nettoyage | fumée (post-déploiement) |
-| Accès manuel | local | aucun (checkout + run local si besoin) | SSH tunnel permanent | HTTP public + SSH admin |
-| Monitoring | aucun | aucun | léger (`/health`) | complet (Prometheus/Grafana/Alertmanager) |
-| Provider | — | aucun (runner CI) | AWS | AWS |
+|              | Local                          | Dev                                    | Staging                   | Prod                                      |
+| ------------ | ------------------------------ | -------------------------------------- | ------------------------- | ----------------------------------------- |
+| Déclencheur  | commit                         | push/PR → `dev`                        | PR/merge → `main`         | release/tag                               |
+| Durée de vie | permanent (poste)              | éphémère (durée du job CI)             | permanent                 | permanent                                 |
+| BDD          | Postgres (local, natif+docker) | Postgres (conteneur, jetable)          | RDS Postgres (managé)     | RDS Postgres (managé)                     |
+| Tests        | unitaires                      | intégration                            | E2E (Cypress) + nettoyage | fumée (post-déploiement)                  |
+| Accès manuel | local                          | aucun (checkout + run local si besoin) | SSH tunnel permanent      | HTTP public + SSH admin                   |
+| Monitoring   | aucun                          | aucun                                  | léger (`/health`)         | complet (Prometheus/Grafana/Alertmanager) |
+| Provider     | —                              | aucun (runner CI)                      | AWS                       | AWS                                       |
 
 ## 4. Pipelines GitHub Actions
 
@@ -83,7 +87,7 @@ Migration en cours : remote GitLab → GitHub effectuée, la CI GitLab n'a pas e
 - **`cd-staging.yml`** — sur merge/PR vers `main` : déploiement sur la VM staging persistante → tests E2E Cypress → nettoyage des données de test.
 - **`cd-prod.yml`** — sur tag/release, avec **approbation manuelle** (environment protection rule GitHub) : build/push image → mise à jour de la stack sur la VM prod → tests de fumée.
 
-### Règles GitHub  configurer
+### Règles GitHub configurer
 
 **Branch protection sur `main`** : PR obligatoire (pas de push direct), status checks requis (`ci.yml` + job E2E pré-merge), branche à jour avant merge, conversations résolues, historique linéaire (squash/rebase), pas de force-push/suppression, règles appliquées aux admins. Review obligatoire si plusieurs contributeurs (sinon documenter le choix solo).
 
@@ -100,8 +104,8 @@ Principe explicite à documenter dans le rapport : l'image Docker est construite
 - Un module Terraform réutilisable : VM, security group, réseau — variabilisé par environnement (`dev`, `staging`, `prod`).
 - **State backend** : S3 + verrouillage DynamoDB (AWS), ou solution équivalente si un second provider est utilisé pour staging.
 - **Sécurité d'accès** :
-  - Prod : security group ouvert en 80/443 (public) + 22 restreint (admin).
-  - Staging/Dev : security group **fermé en 80/443**, seul le port 22 est ouvert — accès uniquement via tunnel SSH.
+    - Prod : security group ouvert en 80/443 (public) + 22 restreint (admin).
+    - Staging/Dev : security group **fermé en 80/443**, seul le port 22 est ouvert — accès uniquement via tunnel SSH.
 - **Authentification GitHub Actions → AWS** : via **OIDC** (rôle IAM assumé temporairement), pas de clés d'accès statiques stockées en secret. Argument de sécurité fort pour le rapport.
 
 ## 6. Base de données
@@ -140,6 +144,7 @@ Stack : `morgan` (déjà en place) → endpoint `/health` → métriques Prometh
 ## 10. Rapport (2-3 pages)
 
 Structure prévue :
+
 1. Architecture générale (schéma des environnements + pipeline).
 2. Justification des choix techniques (environnements éphémère vs permanent, choix des providers, SQLite→Postgres, OIDC, séparation staging/prod).
 3. Interactions entre composants (CI → CD → environnements → monitoring).
@@ -166,4 +171,3 @@ Structure prévue :
 
 - [ ] Détail exact du contenu de la review de PR assistée par IA (simple documentation vs automatisation réelle).
 - [ ] Passer le repo en public (plus tard, pas immédiatement) pour débloquer "Required reviewers" sur l'environnement `production` — indisponible sur repo privé en dehors de GitHub Enterprise. En attendant, gate manuel via `workflow_dispatch` sur `cd-prod.yml`.
-- [ ] Rédaction de la description de PR à soumettre aux profs pour validation du plan.
