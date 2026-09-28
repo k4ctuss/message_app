@@ -83,10 +83,11 @@ Migration en cours : remote GitLab → GitHub effectuée, la CI GitLab n'a pas e
 ## 4. Pipelines GitHub Actions
 
 - **`ci.yml`** — sur toute PR, quel que soit la branche cible : lint, tests unitaires, SonarQube, `npm audit`/secret scanning, build des images Docker. Indépendant de tout déploiement.
-- **`cd-dev.yml`** — sur push/PR vers `dev` : `docker compose up` (backend + Postgres) directement dans le runner, tests d'intégration, aucune infra cloud provisionnée.
+- **`cd-dev.yml`** — sur PR vers `dev` : `docker compose up` (backend + Postgres) directement dans le runner, tests d'intégration, aucune infra cloud provisionnée.
 - **`cd-staging.yml`** — sur merge/PR vers `main` : déploiement sur la VM staging persistante → tests E2E Cypress → nettoyage des données de test.
 - **`cd-prod.yml`** — sur tag/release, avec **approbation manuelle** (environment protection rule GitHub) : build/push image → mise à jour de la stack sur la VM prod → tests de fumée.
 
+Découpage recommandé des fichiers : ci.yml (PR quelle que soit la cible : lint, unitaires, Sonar, audit), ci-dev.yml (PR→dev, intégration), e2e-pr.yml (PR→main), cd-staging.yml (push sur main, environment: staging), cd-prod.yml (tag v* ou workflow_dispatch). Quand tu vois les mêmes 5 steps de setup dupliqués dans plusieurs fichiers, extrais-les dans un composite action local ou un reusable workflow (workflow_call), plutôt que de les copier.
 ### Règles GitHub configurer
 
 **Branch protection sur `main`** : PR obligatoire (pas de push direct), status checks requis (`ci.yml` + job E2E pré-merge), branche à jour avant merge, conversations résolues, historique linéaire (squash/rebase), pas de force-push/suppression, règles appliquées aux admins. Review obligatoire si plusieurs contributeurs (sinon documenter le choix solo).
@@ -124,7 +125,7 @@ Limite à documenter dans le rapport : pour un déploiement parfaitement sans co
 ## 7. Qualité et sécurité
 
 - **SonarQube** : instance gratuite fournie par l'école, intégrée en étape de la CI.
-- **Dependabot/Renovate** : bot de mise à jour des dépendances.
+- **Dependabot** : bot de mise à jour des dépendances.
 - **Secret scanning** : natif GitHub ou gitleaks en CI.
 - **`npm audit`** : vérification des vulnérabilités connues, en CI.
 
