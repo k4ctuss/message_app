@@ -31,10 +31,11 @@ variable "db_instance_type" {
 	default = "db.t3.micro"
 }
 
+// 20 Go is the min for gp3
 variable "allocated_storage" {
 	type = number
 	description = "allocated storage in GB"
-	default = 10
+	default = 20
 }
 
 variable "deletion_protection" {
@@ -47,4 +48,10 @@ variable "backup_retention_period" {
 	type = number
 	description = "backup retention period"
 	default = 7
+}
+
+variable "app_ingress_cidr" {	
+	type = string
+	description = "List of CIDR blocks for the app ingress"
+	default = "0.0.0.0/0"
 }

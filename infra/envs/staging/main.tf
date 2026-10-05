@@ -25,9 +25,9 @@ module "app-stack" {
   app_name = var.app_name
   instance_ami = data.aws_ami.ubuntu.id
   instance_type = var.instance_size
-  root_volume_size = 10
+  root_volume_size = 20
   db_instance_type = var.db_instance_type
-  allocated_storage = 10
-  deletion_protection = true
+  allocated_storage = 20
+  deletion_protection = false
   backup_retention_period = 1
 }

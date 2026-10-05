@@ -1,0 +1,40 @@
+#!/bin/bash
+set -eux
+apt-get update
+apt-get install -y ca-certificates curl nginx
+install -m 0755 -d /etc/apt/keyrings
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+
+apt-get update
+apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
+usermod -aG docker ubuntu
+usermod -aG docker ubuntu
+
+mkdir -p /home/ubuntu/app
+mkdir -p /etc/app
+mkdir -p /etc/nginx/conf.d
+
+# Configuration Nginx générale
+cat > /etc/nginx/nginx.conf <<'EOF'
+${nginx_conf}
+EOF
+
+# Configuration de l'application
+cat > /etc/nginx/conf.d/app.conf <<'EOF'
+${nginx_app_conf}
+EOF
+
+# Aucun déploiement n'est encore actif
+echo "none" > /etc/app/active_slot
+
+# Backend initial : blue
+cat > /etc/nginx/conf.d/active_backend.conf <<'EOF'
+server 127.0.0.1:3001;
+EOF
+
+rm -f /etc/nginx/sites-enabled/default
+
+nginx -t
+
+systemctl enable --now docker
+systemctl enable --now nginx

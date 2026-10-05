@@ -1,17 +1,19 @@
 terraform {
+	required_version = ">= 1.10"
+
 	required_providers {
-    aws = {
-      source  = "hashicorp/aws"
-      version = "~> 3.0"
-    }
-  }
-  backend "s3" {
-    bucket       = "messaging-app-backend"
-    key          = "${var.app_name}-staging-tf/terraform.tfstate"
-    region       = var.region
-    encrypt      = true
-    use_lockfile = true
-  }
+		aws = {
+			source  = "hashicorp/aws"
+			version = "~> 6.0"
+		}
+	}
+	backend "s3" {
+		bucket       = "messaging-app-backend"
+		key          = "messaging-app-staging-tf/terraform.tfstate"
+		region       = "us-east-2"
+		encrypt      = true
+		use_lockfile = true
+	}
 }
 provider "aws" {
     region = var.region
