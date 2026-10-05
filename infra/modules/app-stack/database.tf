@@ -10,7 +10,7 @@ data "aws_subnets" "default" {
 }
 
 resource "aws_db_subnet_group" "db" {
-    name       = "${var.app_name}-${var.infra_env}-db-subnet-group"
+    name       = "${local.name_prefix}-db-subnet-group"
     subnet_ids = data.aws_subnets.default.ids
     tags = {
             Name        = "${var.infra_env}-db-subnet-group"
@@ -19,7 +19,7 @@ resource "aws_db_subnet_group" "db" {
 }
 
 resource "aws_db_instance" "main" {
-    identifier = "${var.app_name}-${var.infra_env}-db-postgres"
+    identifier = "${local.name_prefix}-db-postgres"
 
     // DB config
     engine            = "postgres"
@@ -47,12 +47,12 @@ resource "aws_db_instance" "main" {
     maintenance_window      = "mon:04:00-mon:05:00"
 
     skip_final_snapshot = var.infra_env =="prod" ? false : true
-    final_snapshot_identifier = var.infra_env == "prod" ? "${var.app_name}-${var.infra_env}-final" : null
+    final_snapshot_identifier = var.infra_env == "prod" ? "${local.name_prefix}-final" : null
 
     deletion_protection = var.deletion_protection
 
     tags = {
-        Name        = "${var.app_name}-${var.infra_env}-db-postgres"
+        Name        = "${local.name_prefix}-db-postgres"
         Environment = var.infra_env
     }
 }

@@ -33,7 +33,7 @@ resource "aws_instance" "app" {
 	}
 
 	tags = {
-        Name        = "${var.app_name}-${var.infra_env}-ec2-app"
+        Name        = "${local.name_prefix}-ec2-app"
         Environment = var.infra_env
     }
 }

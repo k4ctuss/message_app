@@ -4,12 +4,12 @@ data "aws_vpc" "default" {
 
 // Security group for the app
 resource "aws_security_group" "app" {
-    name = "${var.app_name}-${var.infra_env}-sg-app"
+    name = "${local.name_prefix}-sg-app"
     description = "Security group for the app"
     vpc_id = data.aws_vpc.default.id
 
     tags = {
-      Name = "${var.app_name}-${var.infra_env}-sg-app"
+      Name = "${local.name_prefix}-sg-app"
       Environment = var.infra_env
       TerraformManaged = "true"
     }
@@ -49,12 +49,12 @@ resource "aws_vpc_security_group_egress_rule" "allow_all_traffic_ipv6" {
 
 // security group for the database
 resource "aws_security_group" "db" {
-    name = "${var.app_name}-${var.infra_env}-sg-db"
+    name = "${local.name_prefix}-sg-db"
     description = "Security group for the database"
     vpc_id = data.aws_vpc.default.id
 
     tags = {
-        Name = "${var.app_name}-${var.infra_env}-sg-db"
+        Name = "${local.name_prefix}-sg-db"
         Environment = var.infra_env
         TerraformManaged = "true"
     }

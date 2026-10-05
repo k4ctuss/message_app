@@ -21,5 +21,5 @@ variable "db_instance_type" {
 variable "app_name" {
     type = string
     description = "application name"
-    default = "app-messaging"
+    default = "messaging-app"
 }

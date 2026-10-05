@@ -1,6 +1,6 @@
 # IAM role that EC2 instances will assume
 resource "aws_iam_role" "ec2_role" {
-  name = "${var.app_name}-${var.infra_env}-ec2-role"
+  name = "${local.name_prefix}-ec2-role"
 
   # Trust policy allowing EC2 service to assume this role
   assume_role_policy = jsonencode({
@@ -12,12 +12,27 @@ resource "aws_iam_role" "ec2_role" {
         Principal = {
           Service = "ec2.amazonaws.com"
         }
+      },
+	  {
+        Effect = "Allow"
+        Action = [
+          "ecr:GetAuthorizationToken"
+        ]
+        Resource = "*"
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "ecr:BatchGetImage",
+          "ecr:GetDownloadUrlForLayer"
+        ]
+        Resource = data.aws_ecr_repository.app.arn
       }
     ]
   })
 
   tags = {
-    Name        = "${var.app_name}-${var.infra_env}-ec2-role"
+    Name        = "${local.name_prefix}-ec2-role"
     Environment = var.infra_env
   }
 }
@@ -31,6 +46,6 @@ resource "aws_iam_role_policy_attachment" "ec2_ssm" {
 
 # Instance profile wraps the role so it can be attached to EC2 instances
 resource "aws_iam_instance_profile" "ec2_profile" {
-  name = "${var.app_name}-${var.infra_env}-ec2-profile"
+  name = "${local.name_prefix}-ec2-profile"
   role = aws_iam_role.ec2_role.name
 }
