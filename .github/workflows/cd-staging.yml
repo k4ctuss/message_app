@@ -1,0 +1,67 @@
+name: Continous deployement for staging environnement
+on:
+  push:
+    branches: main
+permissions:
+  contents: read
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+    outputs:
+      instance_id: ${{ steps.tf-out.outputs.instance_id }}
+    permissions:
+      id-token: write   # nedeed for github to genrate the oicd token
+      contents: read
+
+    steps:
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+      - run: terraform init
+        working-directory: infra/envs/staging
+      - run: terraform apply -auto-approve
+        working-directory: infra/envs/staging
+      - id: tf-out
+        run: echo "instance_id=$(terraform output -raw instance_id)" >> "$GITHUB_OUTPUT"
+        working-directory: infra/envs/staging
+
+  build-push:
+    runs-on: ubuntu-latest
+    outputs:
+      image_tag: ${{ steps.meta.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: meta
+        run: echo "tag=sha-${{ github.sha }}" >> "$GITHUB_OUTPUT"
+      - uses: aws-actions/amazon-ecr-login@v2
+        id: ecr
+      - uses: docker/build-push-action@v6
+        with:
+          push: true
+          tags: ${{ steps.ecr.outputs.registry }}/messaging-app:${{ steps.meta.outputs.tag }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # TODO complete command
+  deploy:
+    needs: [terraform, build-push]
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write   # nedeed for github to genrate the oicd token
+      contents: read
+
+    steps:
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+      - name: Deploy via SSM
+        run: |
+          aws ssm send-command \
+            --instance-ids "${{ needs.terraform.outputs.instance_id }}" \
+            --parameters commands="[...]" \
+          # IMAGE_TAG = ${{ needs.build-push.outputs.image_tag }}
