@@ -29,20 +29,32 @@ fi
 
 # check if the database has received migration
 # SequelizeMeta, indicate if some migrations have been executed
-has_migrations=$(docker exec messaging-db \
+has_meta_table=$(docker exec messaging-db \
   psql -U postgres -d messaging_test -tAc \
-  "SELECT CASE
-      WHEN to_regclass('public.\"SequelizeMeta\"') IS NOT NULL
-       AND EXISTS (SELECT 1 FROM \"SequelizeMeta\")
-      THEN 1
-      ELSE 0
-    END")
+  "SELECT EXISTS (
+     SELECT 1
+     FROM pg_catalog.pg_tables
+     WHERE schemaname = 'public'
+       AND tablename = 'SequelizeMeta'
+   )")
 
-if [ "$has_migrations" = "1" ]; then
-  echo "Migrations détectées : reset activé"
-  DB_RESET=true
+if [ "$has_meta_table" = "t" ]; then
+  has_migrations=$(docker exec messaging-db \
+    psql -U postgres -d messaging_test -tAc \
+    "SELECT EXISTS (
+       SELECT 1
+       FROM public.\"SequelizeMeta\"
+     )")
+
+  if [ "$has_migrations" = "t" ]; then
+    echo "Migrations détectées : reset activé"
+    DB_RESET=true
+  else
+    echo "SequelizeMeta exist but any migration is activated : reset desactivated"
+    DB_RESET=false
+  fi
 else
-  echo "Aucune migration détectée : reset désactivé"
+  echo "SequelizeMeta does not exist : migrations not executed"
   DB_RESET=false
 fi
 
