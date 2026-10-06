@@ -1,4 +1,5 @@
 #!/bin/bash
+set -euo pipefail
 
 ACTIVE_SLOT_FILE="/etc/app/active_slot"
 NGINX_BACKEND_FILE="/etc/nginx/conf.d/active_backend.conf"
@@ -16,6 +17,16 @@ if [[ ! -f "$ENV_FILE" ]]; then
     echo "ERROR: $ENV_FILE does not exist."
     exit 1
 fi
+
+: "${IMAGE_TAG:?IMAGE_TAG doit être fourni}"
+: "${ECR_REGISTRY:?ECR_REGISTRY doit être fourni}"
+
+NEW_IMAGE="${ECR_REGISTRY}/messaging-app:${IMAGE_TAG}"
+
+aws ecr get-login-password --region "${AWS_REGION:-eu-west-3}" \
+  | docker login --username AWS --password-stdin "$ECR_REGISTRY"
+
+docker pull "$NEW_IMAGE"
 
 ACTIVE_SLOT=$(cat "$ACTIVE_SLOT_FILE")
 
@@ -51,7 +62,7 @@ esac
 
 if ! docker run --rm \
     --env-file "$ENV_FILE" \
-    "$IMAGE" \
+    "$NEW_IMAGE" \
     npm run migrate
 then
     exit 1
@@ -68,9 +79,7 @@ docker run -d \
     --name "$CONTAINER_NAME" \
     --env-file "$ENV_FILE" \
     -p "$NEW_PORT:3000" \
-    "$IMAGE" \
-    npm run start:prod
-
+    "$NEW_IMAGE"
 
 # Health check
 elapsed=0

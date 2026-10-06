@@ -42,7 +42,7 @@ jobs:
             sleep 2
           done
 
-      - name: schema migration
+      - name: test schema migration
         run: |
           docker run --rm \
             --network ci_default \
