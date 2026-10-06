@@ -19,8 +19,8 @@ services:
         environment:
             NODE_ENV: production
             PORT: ${PORT:-3000}
-            TOKENSECRET: ${TOKENSECRET:?TOKENSECRET must be set}
-            DATABASE_URL: ${DATABASE_URL:?DATABASE_URL must be set}
+            TOKENSECRET: ${TOKENSECRET:-}
+            DATABASE_URL: ${DATABASE_URL:-}
         depends_on:
             - db
         ports:
