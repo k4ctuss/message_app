@@ -1,0 +1,38 @@
+name: Continuous integration dev - intergration test for frontend & backend
+on:
+  pull_request:
+    branches: 
+      - develop
+permissions:
+  contents: read
+
+jobs:
+  integration_frontend:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+        working-directory: frontend
+      - run: npm run test:integration
+        working-directory: frontend
+
+  integration_backend:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - run: npm ci
+        working-directory: backend
+      - run: TOKENSECRET="test-integration" npm run test
+        working-directory: backend

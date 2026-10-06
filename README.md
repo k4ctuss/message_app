@@ -1,9 +1,3 @@
-## Sonar cube badges
-
-[![Quality gate](https://sonarqube.ensimag.fr/api/project_badges/quality_gate?project=TPFullstack_nolan_blanc&token=sqb_75d1412bd6b7a8827ee2cacbab7b58ac1eb02ee3)](https://sonarqube.ensimag.fr/dashboard?id=TPFullstack_nolan_blanc)
-[![Bugs](https://sonarqube.ensimag.fr/api/project_badges/measure?project=TPFullstack_nolan_blanc&metric=bugs&token=sqb_75d1412bd6b7a8827ee2cacbab7b58ac1eb02ee3)](https://sonarqube.ensimag.fr/dashboard?id=TPFullstack_nolan_blanc)
-[![Coverage](https://sonarqube.ensimag.fr/api/project_badges/measure?project=TPFullstack_nolan_blanc&metric=coverage&token=sqb_75d1412bd6b7a8827ee2cacbab7b58ac1eb02ee3)](https://sonarqube.ensimag.fr/dashboard?id=TPFullstack_nolan_blanc)
-
 ---
 
 title: Messaging App  
@@ -23,7 +17,7 @@ To launch the backend and frontend in dev mode, you can use the following comman
   npm run dev
 ```
 
-This commande will create or restart a docker container for the postgres database, and then launch the backend and frontend in dev mode. The backend will be accessible at http://localhost:3000/api and the frontend at http://localhost:5173 and doc at http://localhost:3000/docs. The backend will be automatically restarted if you modify the code, and the frontend will be automatically reloaded if you modify the code.
+This command creates or restarts a Docker container for the PostgreSQL database, and then launches the backend and frontend in development mode. The backend is available at http://localhost:3000/api, the frontend at http://localhost:5173, and the API documentation at http://localhost:3000/doc. The backend restarts automatically when its code changes, and the frontend reloads automatically when its code changes.
 
 > [!TIP] If you want to seed or reset the database, you can call the command with the following environment variables:
 >
@@ -32,8 +26,58 @@ This commande will create or restart a docker container for the postgres databas
 >  DB_RESET=true DB_SEED=true npm run dev # to reset and seed the database
 > ```
 
-prod (on aws):
-TODO
+## Local production mode
+
+The local production mode builds the production Docker image and starts both
+Compose profiles: `db` for PostgreSQL and `app` for the application.
+
+The application must use the Compose service name `db` in `DATABASE_URL`, not
+`localhost`, because the application runs inside its own container.
+
+```sh
+
+export DATABASE_URL=postgresql://postgres:test@db:5432/messaging
+export PORT=3000
+export TOKENSECRET=local-development-secret
+
+docker compose --profile db --profile app build
+docker compose --profile db --profile app up -d
+```
+
+The application is available at http://localhost:3000. To stop the local
+production stack:
+
+```sh
+docker compose --profile db --profile app down
+```
+
+## Production on AWS
+
+Production and staging are defined with Terraform under `infra/envs`. Each
+environment creates its own EC2 instance, RDS PostgreSQL database, security
+groups, IAM role, and instance profile.
+
+The EC2 bootstrap script installs Docker, Nginx, AWS CLI, and `jq`. It selects
+the environment-specific Nginx configuration and writes it as
+`/etc/nginx/conf.d/app.conf`.
+
+The EC2 instance uses its IAM role to access ECR, Secrets Manager, and SSM
+Parameter Store. Database credentials are read from the RDS-managed secret.
+The JWT secret is read from the environment-specific SSM parameter. Neither
+secret is stored in GitHub Actions or passed as a command-line argument.
+
+Production uses a blue-green deployment. The new image is started on the
+inactive port, migrations and the `/health` endpoint are checked, and Nginx
+is switched to the new container. The previous container is removed only
+after the switch succeeds.
+
+Staging uses a simpler deployment. The new image is pulled, migrations are
+executed, the previous container is stopped, and the new container listens on
+port `3000` behind Nginx.
+
+Images are built once in the staging workflow and tagged with the commit SHA.
+Production deploys the exact same immutable image identified by that SHA; it
+does not rebuild the image.
 
 ## Architecture du code
 
@@ -152,109 +196,80 @@ backend
         `-- websocket.js  # folder containing all websocket functions
 ```
 
-### Gestion des rôles et droits
+### infra
 
-Expliquer ici les différents rôles mis en place, et comment ils sont gérés dans votre code.
+```
+infra
+├── envs                # folder containing the different environments for the infrastructure
+│   ├── prod          
+│   │   ├── main.tf     
+│   │   ├── outputs.tf
+│   │   ├── provider.tf
+│   │   └── variables.tf
+│   ├── shared          # shared is used to set up the shared resources between staging and prod (like the ECR repository) buckets, OICD, etc...
+│   │   ├── main.tf
+│   │   ├── oicd.tf
+│   │   └── provider.tf
+│   └── staging
+│       ├── main.tf
+│       ├── outputs.tf
+│       ├── provider.tf
+│       └── variables.tf
+└── modules           # contains the different modules for the infrastructure called by the different environments
+    └── app-stack
+        ├── database.tf         # contains the RDS database module
+        ├── ec2.tf              # contains the EC2 instance module
+        ├── iam.tf              # contains the IAM roles and policies used by the EC2 instance 
+        ├── main.tf
+        ├── outputs.tf          # contains the outputs of the module
+        ├── scripts
+        │   └── setup_ec2.sh.tftpl  # install package and set up nginx
+        ├── security-groups.tf  # Security groups with egress and ingress rules
+        └── variables.tf
 
-- Coté backend
-
-- Coté frontend
-
-## Cahier des charges
-
-Ici vous décrivez les fonctionnalités souhaitées et celles effectivement mises en oeuvre. Avec un diagramme UML des cas d'usage et des maquettes des vues souhaitées et des captures d'écran de ce qui a été réalisé.
-
-### Cas d'usage
-
-A modifier/compléter
-
-```plantuml
-@startuml
-left to right direction
-actor "Visitor" as v
-actor "Registered User" as u
-actor "Admin" as a
-u <-- a
-rectangle Application {
-  usecase "Register" as R
-  usecase "Connect" as C
-  usecase "Create a Group" as CG
-  usecase "Add user in one of my groups" as AU
-  usecase "Delete user in one of my groups" as AU
-  usecase "Delete a Group" as DG
-  usecase "Change role" as CR
-}
-a --> DG
-a --> CR
-v --> R
-u --> C
-u --> AU
-u --> CG
-@enduml
 ```
 
-### Maquettes
-
-A modifier/compléter...
-
-```plantuml
-@startsalt
-<style>
-header {
-  TextAlignement right
-  BackGroundColor gray
-  FontColor white
-}
-</style>
-header {- Alice@aol.fr | [Se déconnecter] }
-{
-{^Mes groupes
-**Ceux dont je suis membre**
-* Ensimag
-* Grenoble INP
-* <b>Club gaming
-----
-**Ceux que j'administre**
-* Club Gaming
-* Running
-"<i>nom du nouveau groupe"
- [Créer]
-}|
-{^"Discussion sur le groupe <b>Club Gaming"
-{SI
-  [Salut , ca va? ] | Charlie
-  [Super, et toi?] | Asimov
-  [On se fait un truc] | Asimov
-  [Une idée? ] | Charlie
-  . | [Hello, oui]
-  ----|----
-}
-{+ "Une partie de LOL après?" | [Envoyer ] }
-}
-}
-@endsalt
-```
-
-### Captures d'écran
-
-A compléter
-
-### API mise en place
-
-Donner le lien vers la documentation swagger et/ou faire un tableau récapitulant l'API
-
-A compléter
-
-## Test
+## Tests
 
 ### Backend
 
-Décrivez les tests faits au niveau du backend, leur couverture.
+Backend tests use Jest and Supertest. They exercise the HTTP API, including
+authentication, users, groups, and messages, against a test database. The
+backend test command also prepares the test database before running the tests.
 
 ### Frontend
 
-Décrivez les tests faits au niveau du backend, leur couverture.
+Frontend unit tests use Vitest and React Testing Library to test components,
+hooks, and isolated UI behaviour.
 
-## Intégration + déploiement (/3)
+Frontend integration tests use Vitest to test interactions between frontend
+parts and their contexts or application services.
 
-Décrivez ici les éléments mis en place au niveau de l'intégration continue
+End-to-end tests use Cypress. They run the frontend, backend, and PostgreSQL
+database together and test complete user workflows through the browser.
+
+## Git hooks
+
+The `pre-commit` hook runs `lint-staged`. It formats staged JavaScript files
+with Prettier and applies ESLint fixes to the staged backend and frontend
+files.
+
+The `pre-push` hook runs frontend unit tests and the complete backend Jest test
+suite. A push is blocked if either test command fails.
+
+## GitHub Actions workflows
+
+- `ci.yml` runs linting, frontend unit tests, dependency audits, Gitleaks
+  secret scanning, and the Docker image build on pull requests.
+- `ci-dev.yml` runs backend and frontend integration tests for pull requests
+  targeting `develop`.
+- `e2e-pr.yml` builds the application image, starts PostgreSQL, runs database
+  migrations and seeds, then runs Cypress end-to-end tests for pull requests
+  targeting `main`.
+- `infra-staging.yml` runs Checkov and Terraform format, validation, and plan
+  checks for infrastructure pull requests targeting `main`.
+- `cd-staging.yml` applies staging infrastructure, builds and pushes the
+  immutable image, then deploys it to EC2 through SSM and run cypress e2e tests.
+- `cd-prod.yml` is manually triggered with a Git tag. It plans and applies the
+  production infrastructure, then deploys the corresponding immutable image
+  to EC2 through SSM using blue-green deployment.

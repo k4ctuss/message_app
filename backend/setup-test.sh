@@ -27,5 +27,36 @@ if [ "$exists" != "1" ]; then
   docker exec messaging-db createdb -U postgres messaging_test
 fi
 
+# check if the database has received migration
+# SequelizeMeta, indicate if some migrations have been executed
+has_meta_table=$(docker exec messaging-db \
+  psql -U postgres -d messaging_test -tAc \
+  "SELECT EXISTS (
+     SELECT 1
+     FROM pg_catalog.pg_tables
+     WHERE schemaname = 'public'
+       AND tablename = 'SequelizeMeta'
+   )")
+
+if [ "$has_meta_table" = "t" ]; then
+  has_migrations=$(docker exec messaging-db \
+    psql -U postgres -d messaging_test -tAc \
+    "SELECT EXISTS (
+       SELECT 1
+       FROM public.\"SequelizeMeta\"
+     )")
+
+  if [ "$has_migrations" = "t" ]; then
+    echo "Migrations détectées : reset activé"
+    DB_RESET=true
+  else
+    echo "SequelizeMeta exist but any migration is activated : reset desactivated"
+    DB_RESET=false
+  fi
+else
+  echo "SequelizeMeta does not exist : migrations not executed"
+  DB_RESET=false
+fi
+
 cd "$SCRIPT_DIR"
-NODE_ENV=test DB_RESET=true DB_SEED=true npm run updatedb
+NODE_ENV=test DB_RESET="$DB_RESET" DB_SEED=true npm run updatedb
