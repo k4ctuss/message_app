@@ -43,17 +43,6 @@ app.get("/health", (req, res) => {
 // Handle errors
 app.use(errorHandler());
 
-if (process.env.PROXYREACT) {
-    // if dev react server exists, serve all the others routes to
-    const { createProxyMiddleware } = require("http-proxy-middleware");
-    const reactProxy = createProxyMiddleware({
-        target: "http://localhost:5173/",
-        changeOrigin: true,
-        ws: true,
-    });
-    app.use("/", reactProxy);
-}
-
 // Handle not valid route
 app.use("*", (req, res) => {
     res.status(404).json({ status: false, message: "Endpoint Not Found" });
