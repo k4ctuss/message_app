@@ -1,7 +1,8 @@
 # todo
 
 - [x] update README.md with installation instructions : launch backend setup the first time and then use npm run dev in project directory to launch backend and frontend in dev mode
-- [ ] migrate ci pipepline to github actions (creer projet sonar aussi)
+- [ ] migrate CI pipeline to GitHub Actions
+- [x] add Gitleaks secret scanning to CI
 - [x] Ajouter Vitest + React Testing Library pour les tests unitaires frontend.
 - [x] create unit tests for backend and frontend. those shoudl be run in ci and locally with pre-commit hook.
 - [ ] imporve backend integration tests to cover all endpoints and error cases.

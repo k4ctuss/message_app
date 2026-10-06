@@ -12,11 +12,11 @@ Migration en cours : remote GitLab → GitHub effectuée, la CI GitLab n'a pas e
 
 | Critère                        | Comment il est couvert                                                    |
 | ------------------------------ | ------------------------------------------------------------------------- |
-| CI (build + tests automatisés) | GitHub Actions : lint, tests unitaires, build Docker, SonarQube           |
+| CI (build + tests automatisés) | GitHub Actions : lint, tests unitaires, build Docker,            |
 | CD (déploiement automatisé)    | GitHub Actions + Terraform, déploiement différencié par environnement     |
 | Infrastructure as Code         | Terraform (VM, réseau/security groups, backend S3)                        |
 | Plateforme de dev moderne      | GitHub, branch protection, review obligatoire, CODEOWNERS                 |
-| Qualité / sécurité             | SonarQube (analyse statique) + Dependabot + secret scanning + `npm audit` |
+| Qualité / sécurité             | Dependabot + secret scanning + `npm audit` |
 | Usage documenté de l'IA        | `AI_USAGE.md` + éventuelle review de PR automatisée par IA                |
 | Repo fonctionnel               | Ce repo, avec toute la config/doc nécessaire                              |
 | Rapport (2-3 pages)            | Architecture, justification des choix, interactions, limites              |
@@ -82,12 +82,12 @@ Migration en cours : remote GitLab → GitHub effectuée, la CI GitLab n'a pas e
 
 ## 4. Pipelines GitHub Actions
 
-- **`ci.yml`** — sur toute PR, quel que soit la branche cible : lint, tests unitaires, SonarQube, `npm audit`/secret scanning, build des images Docker. Indépendant de tout déploiement.
+- **`ci.yml`** — sur toute PR, quel que soit la branche cible : lint, tests unitaires, `npm audit`/secret scanning, build des images Docker. Indépendant de tout déploiement.
 - **`ci-dev.yml`** — sur PR vers `dev` : `docker compose up` (backend + Postgres) directement dans le runner, tests d'intégration, aucune infra cloud provisionnée.
 - **`cd-staging.yml`** — sur merge/PR vers `main` : déploiement sur la VM staging persistante → tests E2E Cypress → nettoyage des données de test.
 - **`cd-prod.yml`** — sur tag/release, avec **approbation manuelle** (environment protection rule GitHub) : build/push image → mise à jour de la stack sur la VM prod → tests de fumée.
 
-Découpage recommandé des fichiers : ci.yml (PR quelle que soit la cible : lint, unitaires, Sonar, audit), ci-dev.yml (PR→dev, intégration), e2e-pr.yml (PR→main), cd-staging.yml (push sur main, environment: staging), cd-prod.yml (tag v* ou workflow_dispatch). Quand tu vois les mêmes 5 steps de setup dupliqués dans plusieurs fichiers, extrais-les dans un composite action local ou un reusable workflow (workflow_call), plutôt que de les copier.
+Découpage recommandé des fichiers : ci.yml (PR quelle que soit la cible : lint, unitaires, audit), ci-dev.yml (PR→dev, intégration), e2e-pr.yml (PR→main), cd-staging.yml (push sur main, environment: staging), cd-prod.yml (tag v* ou workflow_dispatch). Quand tu vois les mêmes 5 steps de setup dupliqués dans plusieurs fichiers, extrais-les dans un composite action local ou un reusable workflow (workflow_call), plutôt que de les copier.
 ### Règles GitHub configurer
 
 **Branch protection sur `main`** : PR obligatoire (pas de push direct), status checks requis (`ci.yml` + job E2E pré-merge), branche à jour avant merge, conversations résolues, historique linéaire (squash/rebase), pas de force-push/suppression, règles appliquées aux admins. Review obligatoire si plusieurs contributeurs (sinon documenter le choix solo).
@@ -124,7 +124,6 @@ Limite à documenter dans le rapport : pour un déploiement parfaitement sans co
 
 ## 7. Qualité et sécurité
 
-- **SonarQube** : instance gratuite fournie par l'école, intégrée en étape de la CI.
 - **Dependabot** : bot de mise à jour des dépendances.
 - **Secret scanning** : natif GitHub ou gitleaks en CI.
 - **`npm audit`** : vérification des vulnérabilités connues, en CI.
