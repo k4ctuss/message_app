@@ -88,7 +88,7 @@ jobs:
               printf 'export DB_ENDPOINT=%q\n' "${{ needs.terraform.outputs.db_endpoint }}"
               printf 'export DB_NAME=%q\n' "${{ needs.terraform.outputs.db_name }}"
               printf 'export ENV_FILE=%q\n' "/etc/app/runtime.env"
-              cat .github/workflows/scripts/staging-deploy.sh
+              cat .github/workflows/scripts/staging_deploy.sh
             }
           )
           jq -n --arg script "$FULL_SCRIPT" '{commands: [$script]}' > params.json

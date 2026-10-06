@@ -18,7 +18,7 @@ jobs:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-region: ${{ vars.AWS_REGION }}
           
-      - uses: action/checkout@v4
+      - uses: actions/checkout@v4
         with:
           ref: ${{ inputs.tag }}   # checkout tag's commit
 
@@ -34,7 +34,9 @@ jobs:
         working-directory: infra/envs/prod
 
       - uses: actions/upload-artifact@v4
-        with: { name: tfplan, path: tfplan }
+        with:
+          name: tfplan
+          path: infra/envs/prod/tfplan
       
   apply:
     needs: plan
@@ -54,7 +56,7 @@ jobs:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-region: ${{ vars.AWS_REGION }}
           
-      - uses: action/checkout@v4
+      - uses: actions/checkout@v4
         with:
           ref: ${{ inputs.tag }}   # checkout tag's commit
           
@@ -64,7 +66,9 @@ jobs:
         working-directory: infra/envs/prod
 
       - uses: actions/download-artifact@v4
-        with: { name: tfplan }
+        with: 
+          name: tfplan
+          path: infra/envs/prod
 
       - run: terraform apply tfplan
         working-directory: infra/envs/prod
@@ -89,7 +93,7 @@ jobs:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-region: ${{ vars.AWS_REGION }}
           
-      - uses: action/checkout@v4
+      - uses: actions/checkout@v4
         with:
           ref: ${{ inputs.tag }}   # checkout tag's commit
           fetch-depth: 0 # to get full tags/historic
@@ -122,7 +126,7 @@ jobs:
           COMMAND_ID=$(aws ssm send-command \
             --instance-ids "${{ needs.apply.outputs.instance_id }}" \
             --document-name "AWS-RunShellScript" \
-            --comment "blue-green deploy ${{ github.sha }}" \
+            --comment "blue_green deploy ${{ github.sha }}" \
             --parameters file://params.json \
             --query "Command.CommandId" --output text)
 
