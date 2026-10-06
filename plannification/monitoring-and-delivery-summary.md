@@ -83,7 +83,7 @@ Migration en cours : remote GitLab → GitHub effectuée, la CI GitLab n'a pas e
 ## 4. Pipelines GitHub Actions
 
 - **`ci.yml`** — sur toute PR, quel que soit la branche cible : lint, tests unitaires, SonarQube, `npm audit`/secret scanning, build des images Docker. Indépendant de tout déploiement.
-- **`cd-dev.yml`** — sur PR vers `dev` : `docker compose up` (backend + Postgres) directement dans le runner, tests d'intégration, aucune infra cloud provisionnée.
+- **`ci-dev.yml`** — sur PR vers `dev` : `docker compose up` (backend + Postgres) directement dans le runner, tests d'intégration, aucune infra cloud provisionnée.
 - **`cd-staging.yml`** — sur merge/PR vers `main` : déploiement sur la VM staging persistante → tests E2E Cypress → nettoyage des données de test.
 - **`cd-prod.yml`** — sur tag/release, avec **approbation manuelle** (environment protection rule GitHub) : build/push image → mise à jour de la stack sur la VM prod → tests de fumée.
 
@@ -172,3 +172,9 @@ Structure prévue :
 
 - [ ] Détail exact du contenu de la review de PR assistée par IA (simple documentation vs automatisation réelle).
 - [ ] Passer le repo en public (plus tard, pas immédiatement) pour débloquer "Required reviewers" sur l'environnement `production` — indisponible sur repo privé en dehors de GitHub Enterprise. En attendant, gate manuel via `workflow_dispatch` sur `cd-prod.yml`.
+
+
+source rapport :
+- https://dev.to/aws-builders/provisioning-aws-infrastructure-using-terraform-and-github-actions-40ei
+- doc cypress
+- tuto action github

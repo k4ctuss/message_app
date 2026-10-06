@@ -5,8 +5,8 @@
 - [x] Ajouter Vitest + React Testing Library pour les tests unitaires frontend.
 - [x] create unit tests for backend and frontend. those shoudl be run in ci and locally with pre-commit hook.
 - [ ] imporve backend integration tests to cover all endpoints and error cases.
-- [ ] fill the dockerfile with step to build and run the backend and frontend in prod mode for deployment. The dockerfile should be used in ci to build the docker image and run the tests in a containerized environment.
-- [ ] supprimer le mock des endpoint des test E2E, normalment un tets E2E devrait tester le backend et le frontend en meme temps, donc il ne faut pas mocker les endpoint du backend. on peut garder le mock pour des test unitaire du frontend sur des composants isolés, mais pas pour les test E2E.
+- [x] fill the dockerfile with step to build and run the backend and frontend in prod mode for deployment. The dockerfile should be used in ci to build the docker image and run the tests in a containerized environment.
+- [x] supprimer le mock des endpoint des test E2E, normalment un tets E2E devrait tester le backend et le frontend en meme temps, donc il ne faut pas mocker les endpoint du backend. on peut garder le mock pour des test unitaire du frontend sur des composants isolés, mais pas pour les test E2E.
 - [ ] set up le ssm sur aws avec le db url et creer les databases sur RDS. Permissions au niveau du rôle Postgres : le compte utilisé par l'app en prod ne devrait avoir que SELECT/INSERT/UPDATE/DELETE, jamais de droits DROP/TRUNCATE/ALTER.
 - [ ] definir le plan pour le monitoring de la prod avec prometheus et grafana ( docker ou composant de aws ) implmenter /metric avec metrics a scrape et donc definir les metrics et les mesurer sur les endpoints de l'api, les et voir alerte si le temps le permet
 - [ ] Ajouter un healthcheck PostgreSQL dans docker-compose.yml.
@@ -22,7 +22,7 @@
 }
 ```
 
-worflow pour tests un migration sur le pre-merge de staging
+worflow pour tests une migration sur le pre-merge de staging
 
 ```yaml
 - run: docker compose --profile db up -d
@@ -54,3 +54,58 @@ equivalent en prod a
     # 5. Nettoyage de l'ancien
     docker stop app_blue && docker rm app_blue
 ```
+
+pour ajouter des variables
+- name: Construire les paramètres SSM
+  run: |
+    FULL_SCRIPT=$(printf 'export IMAGE_TAG=%q\n%s' "${{ steps.meta.outputs.tag }}" "$(cat .github/workflows/scripts/blue-green.sh)")
+    jq -n --arg script "$FULL_SCRIPT" '{commands: [$script]}' > params.json
+
+- name: Construire les paramètres SSM
+  run: |
+    jq -n --rawfile script .github/workflows/scripts/blue-green.sh \
+      '{commands: [$script]}' > params.json
+
+- name: Déployer via SSM
+  run: |
+    COMMAND_ID=$(aws ssm send-command \
+      --instance-ids "${{ needs.terraform.outputs.instance_id }}" \
+      --document-name "AWS-RunShellScript" \
+      --comment "blue-green deploy ${{ github.sha }}" \
+      --parameters file://params.json \
+      --query "Command.CommandId" --output text)
+
+    aws ssm wait command-executed \
+      --command-id "$COMMAND_ID" \
+      --instance-id "${{ needs.terraform.outputs.instance_id }}"
+
+    aws ssm get-command-invocation \
+      --command-id "$COMMAND_ID" \
+      --instance-id "${{ needs.terraform.outputs.instance_id }}"
+
+
+
+name: cd-prod
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag à déployer (ex: v1.2.3)'
+        required: true
+steps:
+  - uses: actions/checkout@v4
+    with:
+      ref: ${{ inputs.tag }}   # checkout le commit du tag v1.2.3
+      fetch-depth: 0           # besoin des tags/historique complet
+
+  - id: resolve
+    run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+  - id: meta
+    run: echo "image_tag=sha-${{ steps.resolve.outputs.sha }}" >> "$GITHUB_OUTPUT"
+
+
+TODO: 
+faire deux script au lieu d'un pour les boot des ec2 en fonction de env
+faire scipt de staging deployeemnt
+faire workflow de cd prod
