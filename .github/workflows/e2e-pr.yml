@@ -67,6 +67,7 @@ jobs:
             -p 3000:3000 \
             -e NODE_ENV=production \
             -e DB_SSL=false \
+            -e TOKENSECRET="e2e-test-secret" \
             -e DATABASE_URL="postgresql://postgres:test@db:5432/messaging_test" \
             app:ci npm run start
 
