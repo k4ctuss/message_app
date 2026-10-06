@@ -12,7 +12,7 @@ async function updateDatabase() {
     if (resetDatabase) {
         if (!isResetAllowed) {
             throw new Error(
-                `DB reset refusé : NODE_ENV="${process.env.NODE_ENV}" n'autorise pas le reset`,
+                `DB reset refusé : NODE_ENV="${process.env.NODE_ENV}" n'autorise pas le reset ou DATABASE_URL est set`,
             );
         }
         execSync("npx sequelize-cli db:seed:undo:all", { stdio: "inherit" });
