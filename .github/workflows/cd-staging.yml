@@ -10,6 +10,9 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       instance_id: ${{ steps.tf-out.outputs.instance_id }}
+      db_endpoint: ${{ steps.tf-out.outputs.db_endpoint }}
+      db_name: ${{ steps.tf-out.outputs.db_name }}
+      db_secret_arn: ${{ steps.tf-out.outputs.db_secret_arn }}
     permissions:
       id-token: write   # nedeed for github to genrate the oicd token
       contents: read
@@ -26,15 +29,26 @@ jobs:
       - run: terraform apply -auto-approve
         working-directory: infra/envs/staging
       - id: tf-out
-        run: echo "instance_id=$(terraform output -raw instance_id)" >> "$GITHUB_OUTPUT"
+        run: |
+          echo "instance_id=$(terraform output -raw instance_id)" >> "$GITHUB_OUTPUT"
+          echo "db_endpoint=$(terraform output -raw db_endpoint)" >> "$GITHUB_OUTPUT"
+          echo "db_name=$(terraform output -raw db_name)" >> "$GITHUB_OUTPUT"
+          echo "db_secret_arn=$(terraform output -raw db_secret_arn)" >> "$GITHUB_OUTPUT"
         working-directory: infra/envs/staging
 
   build-push:
     runs-on: ubuntu-latest
     outputs:
       image_tag: ${{ steps.meta.outputs.tag }}
+    permissions:
+      id-token: write
+      contents: read
     steps:
       - uses: actions/checkout@v4
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
       - id: meta
         run: echo "tag=sha-${{ github.sha }}" >> "$GITHUB_OUTPUT"
       - uses: aws-actions/amazon-ecr-login@v2
@@ -46,7 +60,6 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  # TODO complete command
   deploy:
     needs: [terraform, build-push]
     runs-on: ubuntu-latest
@@ -60,12 +73,39 @@ jobs:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-region: ${{ vars.AWS_REGION }}
 
+      - uses: actions/checkout@v4
       - uses: aws-actions/amazon-ecr-login@v2
         id: ecr
 
-      - name: Deploy via SSM
+      - name: Construire les paramètres SSM
         run: |
-          aws ssm send-command \
+          FULL_SCRIPT=$(
+            {
+              printf 'export IMAGE_TAG=%q\n' "${{ needs.build-push.outputs.image_tag }}"
+              printf 'export ECR_REGISTRY=%q\n' "${{ steps.ecr.outputs.registry }}"
+              printf 'export AWS_REGION=%q\n' "${{ vars.AWS_REGION }}"
+              printf 'export DB_SECRET_ARN=%q\n' "${{ needs.terraform.outputs.db_secret_arn }}"
+              printf 'export DB_ENDPOINT=%q\n' "${{ needs.terraform.outputs.db_endpoint }}"
+              printf 'export DB_NAME=%q\n' "${{ needs.terraform.outputs.db_name }}"
+              printf 'export ENV_FILE=%q\n' "/etc/app/runtime.env"
+              cat .github/workflows/scripts/staging-deploy.sh
+            }
+          )
+          jq -n --arg script "$FULL_SCRIPT" '{commands: [$script]}' > params.json
+
+      - name: Déployer via SSM
+        run: |
+          COMMAND_ID=$(aws ssm send-command \
             --instance-ids "${{ needs.terraform.outputs.instance_id }}" \
-            --parameters commands="[...]" \
-          # IMAGE_TAG = ${{ needs.build-push.outputs.image_tag }}
+            --document-name "AWS-RunShellScript" \
+            --comment "staging deploy ${{ github.sha }}" \
+            --parameters file://params.json \
+            --query "Command.CommandId" --output text)
+
+          aws ssm wait command-executed \
+            --command-id "$COMMAND_ID" \
+            --instance-id "${{ needs.terraform.outputs.instance_id }}"
+
+          aws ssm get-command-invocation \
+            --command-id "$COMMAND_ID" \
+            --instance-id "${{ needs.terraform.outputs.instance_id }}"

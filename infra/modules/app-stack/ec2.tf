@@ -15,9 +15,10 @@ resource "aws_instance" "app" {
 	  encrypted = true
 	}
 
-	user_data = templatefile("${path.module}/user_data.sh.tftpl", {
+	user_data = templatefile("${path.module}/scripts/setup_ec2.sh.tftpl", {
+		infra_env = var.infra_env
 		nginx_conf = file("${path.module}/../../../nginx/nginx.conf")
-		nginx_app_conf = file("${path.module}/../../../nginx/app.conf")
+		nginx_app_conf = file("${path.module}/../../../nginx/${var.infra_env}-app.conf")
 	})
 	
 	# Enforce IMDSv2 for enhanced security
