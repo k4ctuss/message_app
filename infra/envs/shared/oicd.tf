@@ -30,9 +30,6 @@ resource "aws_iam_role" "github_actions" {
 
 data "aws_caller_identity" "current" {}
 
-data "aws_kms_key" "shared" {
-  key_id = "alias/messaging-app-shared"
-}
 
 # This role is shared by the staging and production Terraform/deployment
 # workflows. Resources created in envs/shared are managed by the bootstrap user.
@@ -257,7 +254,7 @@ resource "aws_iam_role_policy" "github_actions_permissions" {
           "kms:Encrypt",
           "kms:GenerateDataKey"
         ]
-        Resource = data.aws_kms_key.shared.arn
+        Resource = aws_kms_key.shared.arn
       },
       {
         Sid    = "ApplicationSecrets"
