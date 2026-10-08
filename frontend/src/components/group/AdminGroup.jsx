@@ -120,7 +120,10 @@ export function AdminGroup() {
                                 <CardDescription className="w-full">
                                     Liste des membres
                                 </CardDescription>
-                                <div className="flex flex-col w-full gap-4">
+                                <div
+                                    data-cy="list-member"
+                                    className="flex flex-col w-full gap-4"
+                                >
                                     {group.members.map((member) => (
                                         <div
                                             key={member.id}

@@ -37,7 +37,9 @@ describe("Group management", () => {
         cy.get("[data-cy=select-member]").should("not.be.disabled").click();
         cy.contains('[role="option"]', member.email).realClick();
         cy.get("[data-cy=add-member]").should("not.be.disabled").click();
-        cy.contains(member.email).should("be.visible");
+        cy.get("[data-cy=list-member]")
+            .contains(member.email)
+            .should("be.visible");
 
         cy.contains(member.email)
             .parent()
@@ -45,7 +47,9 @@ describe("Group management", () => {
             .contains("Supprimer")
             .click();
         cy.contains(`Administration "${groupName}"`).should("be.visible");
-        cy.contains(member.email).should("not.exist");
+        cy.get("[data-cy=list-member]")
+            .contains(member.email)
+            .should("not.exist");
     });
 
     it("shows the group to a member, not as an owned group", () => {
