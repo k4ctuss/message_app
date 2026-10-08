@@ -73,6 +73,11 @@ jobs:
             -e TOKENSECRET="e2e-test-secret" \
             -e DATABASE_URL="postgresql://postgres:test@db:5432/messaging_test" \
             app:ci npm run start:prod
+      
+      - name: debug info
+        run: |
+          docker ps --all
+          docker logs app
 
       - name: Attendre que l'app soit prête
         run: |
