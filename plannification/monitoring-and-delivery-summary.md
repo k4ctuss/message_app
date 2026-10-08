@@ -172,6 +172,8 @@ Structure prévue :
 - [ ] Détail exact du contenu de la review de PR assistée par IA (simple documentation vs automatisation réelle).
 - [ ] Passer le repo en public (plus tard, pas immédiatement) pour débloquer "Required reviewers" sur l'environnement `production` — indisponible sur repo privé en dehors de GitHub Enterprise. En attendant, gate manuel via `workflow_dispatch` sur `cd-prod.yml`.
 
+limitation: 1 seul role oicd pour qui a tous les droits pour deploy build et terraform, il faudrai separer pour qu'un jobs build n'ai pas les droit de modifier l'infra par exemple
+
 
 source rapport :
 - https://dev.to/aws-builders/provisioning-aws-infrastructure-using-terraform-and-github-actions-40ei

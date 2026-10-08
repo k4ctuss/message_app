@@ -6,6 +6,9 @@ on:
         description: 'Tag to deploy (ex: v1.2.3)'
         required: true 
 
+env:
+  TF_VERSION: '1.10.0'
+
 jobs:
   plan:
     runs-on: ubuntu-latest
@@ -23,6 +26,8 @@ jobs:
           ref: ${{ inputs.tag }}   # checkout tag's commit
 
       - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
 
       - run: terraform init
         working-directory: infra/envs/prod
@@ -61,6 +66,8 @@ jobs:
           ref: ${{ inputs.tag }}   # checkout tag's commit
           
       - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
 
       - run: terraform init
         working-directory: infra/envs/prod

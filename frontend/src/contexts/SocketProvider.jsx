@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { io } from "socket.io-client";
 import { useAuth } from "./auth-context";
 import { SocketContext } from "./socket-context";
+import { API_URL } from "@/config/api";
 
 export function SocketContextProvider({ children }) {
     const [socket, setSocket] = useState(null);
@@ -10,7 +11,7 @@ export function SocketContextProvider({ children }) {
     useEffect(() => {
         if (!token) return;
 
-        const newSocket = io(import.meta.env.VITE_API_URL, {
+        const newSocket = io(API_URL, {
             auth: { token },
         });
         newSocket.connect();

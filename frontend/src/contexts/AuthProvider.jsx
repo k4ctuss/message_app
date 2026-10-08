@@ -1,8 +1,8 @@
 import { useCallback, useMemo, useReducer, useEffect } from "react";
 import { setCookie, getCookie } from "@/lib/utils";
 import { AuthContext } from "@/contexts/auth-context";
+import { API_URL } from "@/config/api";
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
 const AUTH_COOKIE = "ACCESS_TOKEN_AUTH";
 
 const initialState = {

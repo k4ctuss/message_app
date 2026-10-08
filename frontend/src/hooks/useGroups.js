@@ -1,8 +1,7 @@
 import { useAuth } from "@/contexts/auth-context";
 import { useSocket } from "@/contexts/socket-context";
 import { useCallback, useEffect, useState } from "react";
-
-const API_URL = import.meta.env.VITE_API_URL;
+import { API_URL } from "@/config/api";
 
 async function requestGroups(type, token) {
     const endpoint = `${API_URL}/api/${type === "admin" ? "mygroups" : "groupsmember"}`;

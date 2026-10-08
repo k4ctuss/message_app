@@ -5,6 +5,9 @@ on:
 permissions:
   contents: read
 
+env:
+  TF_VERSION: '1.10.0'
+
 jobs:
   terraform:
     runs-on: ubuntu-latest
@@ -25,6 +28,8 @@ jobs:
           aws-region: ${{ vars.AWS_REGION }}
       - uses: actions/checkout@v4
       - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
       - run: terraform init
         working-directory: infra/envs/staging
       - run: terraform apply -auto-approve
