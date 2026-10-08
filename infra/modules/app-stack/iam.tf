@@ -42,7 +42,8 @@ resource "aws_iam_role_policy" "ec2_permissions" {
         Effect = "Allow"
         Action = [
           "ecr:BatchGetImage",
-          "ecr:GetDownloadUrlForLayer"
+          "ecr:GetDownloadUrlForLayer",
+          "ecr:BatchCheckLayerAvailability"
         ]
         Resource = data.aws_ecr_repository.app.arn
       },

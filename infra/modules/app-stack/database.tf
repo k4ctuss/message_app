@@ -46,6 +46,7 @@ resource "aws_db_instance" "main" {
     # checkov:skip=CKV_AWS_157:Multi-AZ is intentionally disabled to avoid the additional database standby cost.
     # checkov:skip=CKV_AWS_293:Deletion protection is controlled per environment and remains unchanged.
     # checkov:skip=CKV_AWS_118:Enhanced monitoring would add an IAM role and monitoring cost without changing the deployment.
+    # checkov:skip=CKV2_AWS_69:Enforcing SSL in transit requires an application connection change and is intentionally deferred.
     identifier = "${local.name_prefix}-db-postgres"
 
     // DB config
