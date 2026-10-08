@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@/contexts/auth-context";
 import { useSocket } from "@/contexts/socket-context";
-
-const API_URL = import.meta.env.VITE_API_URL;
+import { API_URL } from "@/config/api";
 
 async function requestGroup(gid, token) {
     const options = { method: "get", headers: { "x-access-token": token } };

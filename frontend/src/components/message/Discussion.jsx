@@ -18,8 +18,7 @@ import { useDiscussion } from "@/hooks/useDiscussion";
 import { useAuth } from "@/contexts/auth-context";
 import { useSocket } from "@/contexts/socket-context";
 import { SendHorizontal } from "lucide-react";
-
-const API_URL = import.meta.env.VITE_API_URL;
+import { API_URL } from "@/config/api";
 
 export function Discussion() {
     const { user, token } = useAuth();
