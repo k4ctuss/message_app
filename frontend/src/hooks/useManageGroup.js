@@ -1,133 +1,171 @@
 import { useCallback, useEffect, useState } from "react";
-import { useAuth } from "@/contexts/AuthContext";
-import { useSocket } from "@/contexts/SocketContext";
+import { useAuth } from "@/contexts/auth-context";
+import { useSocket } from "@/contexts/socket-context";
+import { API_URL } from "@/config/api";
 
-const API_URL = import.meta.env.VITE_API_URL;
+async function requestGroup(gid, token) {
+    const options = { method: "get", headers: { "x-access-token": token } };
 
-export function useManageGroup(gid){
-    const {token} = useAuth();
-    const {socket} = useSocket();
+    const resGroups = await fetch(`${API_URL}/api/mygroups`, options);
+    const dataGroups = await resGroups.json();
+    if (!resGroups.ok) throw new Error(dataGroups.message);
 
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState(null);
+    const myGroup = dataGroups.groups.find((g) => g.id == gid);
+    if (!myGroup) throw new Error("Groupe introuvable");
+
+    const resMem = await fetch(`${API_URL}/api/mygroups/${gid}`, options);
+    const dataMem = await resMem.json();
+    if (!resMem.ok) throw new Error(dataMem.message);
+    myGroup.members = dataMem.members;
+
+    const resUsers = await fetch(`${API_URL}/api/users`, options);
+    const dataUsers = await resUsers.json();
+    if (!resUsers.ok) throw new Error(dataUsers.message);
+
+    const membersId = myGroup.members.map((u) => u.id);
+    myGroup.potentialMembers = dataUsers.users.filter(
+        (u) => !membersId.includes(u.id),
+    );
+
+    return myGroup;
+}
+
+export function useManageGroup(gid) {
+    const { token } = useAuth();
+    const { socket } = useSocket();
+
+    const [loading, setLoading] = useState(true);
+    const [fetchError, setFetchError] = useState(null);
     const [group, setGroup] = useState(null);
 
-    const fetchGroup = useCallback(async()=>{
-        if(!gid || !Number.isInteger(Number(gid))){
-            setError("Id group invalid");
-            return;
+    const isValidGid = Boolean(gid) && Number.isInteger(Number(gid));
+    const error = !isValidGid ? "groupe invalide" : fetchError;
+
+    const fetchGroup = useCallback(async () => {
+        if (!isValidGid) return;
+
+        try {
+            setGroup(await requestGroup(gid, token));
+            setFetchError(null);
+        } catch (err) {
+            console.log(err);
+            setFetchError(err.message || "Error de recuperation du groupe");
         }
+    }, [gid, token, isValidGid]);
 
-        try{
-            setError(null);
-            setLoading(true);
+    const manageMember = useCallback(
+        async (type, memberId) => {
+            if (
+                (type !== "delete" && type !== "add") ||
+                !memberId ||
+                !Number.isInteger(Number(memberId))
+            ) {
+                return;
+            }
+            try {
+                setFetchError(null);
+                setLoading(true);
 
-            const options = {
-                method:'get',
-                headers:{'x-access-token':token}
-            };
-            const response = await fetch(`${API_URL}/api/mygroups`, options);
-            if(response.ok){
-                const data = await response.json();
-                let myGroup = data.groups.find(g=>g.id == gid);
-
-                // get members;
-                const responseMem = await fetch(`${API_URL}/api/mygroups/${gid}`, options);
-                if(responseMem.ok){
-                    const dataMem = await responseMem.json();
-                    myGroup.members = dataMem.members;
-                    const responseUsers = await fetch(`${API_URL}/api/users`, options);
-                    if(responseUsers.ok){
-                        const dataUser = await responseUsers.json();
-                        const membersId = myGroup.members.map(u=>u.id);
-                        myGroup.potentialMembers = dataUser.users.filter(user => !membersId.includes(user.id));
-                        setGroup(myGroup);
-                    }else{
-                        const error = await responseMem.json();
-                        setError(error.message);
-                    } 
-                }else{
-                    const error = await responseMem.json();
-                    setError(error.message);
+                const options = {
+                    method: type === "add" ? "put" : "delete",
+                    headers: { "x-access-token": token },
+                };
+                const response = await fetch(
+                    `${API_URL}/api/mygroups/${gid}/${memberId}`,
+                    options,
+                );
+                if (!response.ok) {
+                    const error = await response.json();
+                    setFetchError(error.message);
+                } else {
+                    await fetchGroup();
                 }
-            }else{
-                const error = await response.json();
-                setError(error.message);
+            } catch (err) {
+                console.log(err);
+                setFetchError(
+                    err.message ||
+                        `Error ${type === "add" ? "d'ajout" : "de suppresion"} d'un membre`,
+                );
+            } finally {
+                setLoading(false);
             }
-        }catch(err){
-            console.log(err);
-            setError(err.message || "Error de recuperation du groupe");
-        }finally{
-            setLoading(false);
-        }
-    },[gid, token]);
+        },
+        [token, gid, fetchGroup],
+    );
 
-    const manageMember = useCallback(async(type, memberId)=>{
-        if(type!== "delete" && type!== "add" || !memberId || !Number.isInteger(Number(memberId))){
-            return;
-        }
-        try{
-            setError(null);
-            setLoading(true);
+    const addMember = useCallback(
+        async (memberId) => {
+            await manageMember("add", memberId);
+        },
+        [manageMember],
+    );
 
-            const options = {
-                method: type === "add" ? 'put' : 'delete',
-                headers:{'x-access-token':token}
-            };
-            const response = await fetch(`${API_URL}/api/mygroups/${gid}/${memberId}`, options);
-            if(!response.ok){
-                const error = await response.json();
-                setError(error.message);
-            }else{
-                await fetchGroup();
+    const deleteMember = useCallback(
+        async (memberId) => {
+            await manageMember("delete", memberId);
+        },
+        [manageMember],
+    );
+
+    const addMemberWS = useCallback(
+        (memberId) => {
+            if (!socket) {
+                addMember(memberId);
+                return;
             }
-        }catch(err){
-            console.log(err);
-            setError(err.message || `Error ${type==="add"? "d'ajout": "de suppresion"} d'un membre`);
-        }finally{
-            setLoading(false);
-        }
+            socket.emit("addMember", { gid, uid: memberId }, (res) => {
+                if (res.status == "NOK") setFetchError(res.message);
+                else {
+                    setFetchError(null);
+                    fetchGroup();
+                }
+            });
+        },
+        [gid, socket, addMember, fetchGroup],
+    );
 
-    },[token, gid, fetchGroup]);
-
-    const addMember = useCallback(async(memberId)=>{
-        await manageMember("add", memberId);
-    }, [manageMember]);
-
-    const deleteMember = useCallback(async(memberId)=>{
-        await manageMember("delete", memberId);
-    }, [manageMember]);
-
-    const addMemberWS = useCallback((memberId)=>{
-        if(!socket) return;
-        socket.emit('addMember', {gid, uid: memberId}, (res)=>{
-            if(res.status == 'NOK')
-                setError(res.message);
-            else{
-                setError(null);
-                fetchGroup();
+    const deleteMemberWS = useCallback(
+        (memberId) => {
+            if (!socket) {
+                deleteMember(memberId);
+                return;
             }
-        });
+            socket.emit("deleteMember", { gid, uid: memberId }, (res) => {
+                if (res.status == "NOK") setFetchError(res.message);
+                else {
+                    setFetchError(null);
+                    fetchGroup();
+                }
+            });
+        },
+        [gid, socket, deleteMember, fetchGroup],
+    );
 
-    },[gid, socket])
-    
-    const deleteMemberWS = useCallback((memberId)=>{
-        if(!socket) return;
-        socket.emit('deleteMember', {gid, uid: memberId}, (res)=>{
-            if(res.status == 'NOK')
-                setError(res.message);
-            else{
-                setError(null);
-                fetchGroup();
-            }
-        });
+    // chargement initial : inline + ignore → lint content ET racecondition gérée avec boolean ignore
+    useEffect(() => {
+        if (!isValidGid) return;
+        let ignore = false;
+        requestGroup(gid, token)
+            .then((g) => {
+                if (!ignore) {
+                    setGroup(g);
+                    setFetchError(null);
+                }
+            })
+            .catch((e) => {
+                if (!ignore)
+                    setFetchError(
+                        e.message || "Error de recuperation du groupe",
+                    );
+            })
+            .finally(() => {
+                if (!ignore) setLoading(false);
+            });
 
-    },[gid, socket])
-
-
-    useEffect(()=>{
-        fetchGroup();
-    },[fetchGroup])
+        return () => {
+            ignore = true;
+        };
+    }, [gid, token, isValidGid]);
 
     return {
         error,
@@ -136,7 +174,6 @@ export function useManageGroup(gid){
         addMember,
         deleteMember,
         addMemberWS,
-        deleteMemberWS
-    }
-
+        deleteMemberWS,
+    };
 }

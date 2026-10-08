@@ -1,0 +1,114 @@
+name: e2e-pr
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      # build never pused, only used to validate Dockerfile and to run the e2e. 
+      # cache shared with ci.yml and cd-staging via GHA so build is fast if nothing change
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: false
+          load: true
+          tags: app:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Start Postgres
+        run: docker compose -p ci --profile db up -d
+
+      - name: wait for postgres to be up
+        run: |
+          for i in $(seq 1 15); do
+            docker exec $(docker compose -p ci ps -q db) pg_isready -U postgres && break
+            sleep 2
+          done
+
+      - name: test schema migration
+        run: |
+          docker run --rm \
+            --network ci_default \
+            -e NODE_ENV=production \
+            -e PORT:3000 \
+            -e DB_SSL=false \
+            -e DATABASE_URL="postgresql://postgres:test@db:5432/messaging_test" \
+            app:ci npm run migrate
+
+      - name: Seed with fixed dataset (not staging snapshot)
+        run: |
+          docker run --rm \
+            --network ci_default \
+            -e NODE_ENV=production \
+            -e PORT:3000 \
+            -e DB_SSL=false \
+            -e DATABASE_URL="postgresql://postgres:test@db:5432/messaging_test" \
+            app:ci npm run db:seed
+
+      - name: Start app in production mode, start:prod
+        run: |
+          docker run -d --name app \
+            --network ci_default \
+            -p 3000:3000 \
+            -e NODE_ENV=production \
+            -e DB_SSL=false \
+            -e PORT=3000 \
+            -e TOKENSECRET="e2e-test-secret" \
+            -e DATABASE_URL="postgresql://postgres:test@db:5432/messaging_test" \
+            app:ci npm run start:prod
+
+      - name: Attendre que l'app soit prête
+        run: |
+          for i in $(seq 1 15); do
+            curl -sf http://localhost:3000/health && break
+            sleep 2
+          done
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json 
+
+      - run: npm ci
+        working-directory: frontend
+
+      - name: Tests E2E
+        run: npx cypress run --config baseUrl=http://localhost:3000
+        working-directory: frontend
+
+      - name: Logs de l'app en cas d'échec
+        if: failure()
+        run: docker logs app
+
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: cypress-artifacts
+          path: |
+            frontend/cypress/screenshots
+            frontend/cypress/videos
+          retention-days: 7
+
+      - name: Nettoyage
+        if: always()
+        run: |
+          docker rm -f app || true
+          docker compose -p ci down -v

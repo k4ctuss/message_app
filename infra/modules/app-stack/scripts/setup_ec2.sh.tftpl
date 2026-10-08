@@ -1,0 +1,55 @@
+#!/bin/bash
+set -eux
+apt-get update
+apt-get install -y ca-certificates curl nginx jq
+# check aws or install it
+if ! command -v aws >/dev/null 2>&1; then
+  curl -fsSL https://awscli.amazonaws.com/v2/install.sh | bash 
+fi
+
+install -m 0755 -d /etc/apt/keyrings
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+
+apt-get update
+apt-get install -y docker-ce docker-ce-cli containerd.io
+usermod -aG docker ubuntu
+usermod -aG docker ubuntu
+
+mkdir -p /home/ubuntu/app
+mkdir -p /etc/app
+mkdir -p /etc/nginx/conf.d
+
+rm -f /etc/nginx/conf.d/*.conf
+
+
+if [[ "${infra_env}" == "prod" ]]; then
+  cat > /etc/nginx/conf.d/app.conf <<'EOF'
+${nginx_app_conf}
+EOF
+
+  # This file is used by the blue-green deployment in production.
+  echo "none" > /etc/app/active_slot
+  cat > /etc/nginx/conf.d/active_backend.conf <<'EOF'
+server 127.0.0.1:3001;
+EOF
+elif [[ "${infra_env}" == "staging" ]]; then
+  cat > /etc/nginx/conf.d/app.conf <<'EOF'
+${nginx_app_conf}
+EOF
+
+else
+  echo "ERROR: unsupported environment: ${infra_env}" >&2
+  exit 1
+fi
+
+# Configuration Nginx générale
+cat > /etc/nginx/nginx.conf <<'EOF'
+${nginx_conf}
+EOF
+
+rm -f /etc/nginx/sites-enabled/default
+
+nginx -t
+
+systemctl enable --now docker
+systemctl enable --now nginx
