@@ -218,6 +218,7 @@ resource "aws_iam_role_policy" "github_actions_permissions" {
           "ecr:DescribeRepositories",
           "ecr:InitiateLayerUpload",
           "ecr:ListImages",
+          "ecr:ListTagsForResource",
           "ecr:PutImage",
           "ecr:UploadLayerPart"
         ]
