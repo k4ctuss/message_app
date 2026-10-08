@@ -76,6 +76,7 @@ jobs:
       
       - name: debug info
         run: |
+          sleep 10
           docker ps --all
           docker logs app
 
