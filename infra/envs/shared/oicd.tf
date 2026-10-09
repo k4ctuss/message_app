@@ -103,7 +103,8 @@ resource "aws_iam_role_policy" "github_actions_permissions" {
           "ec2:ReleaseAddress",
           "ec2:AssociateAddress",
           "ec2:DisassociateAddress",
-          "ec2:DescribeAddresses"
+          "ec2:DescribeAddresses",
+          "ec2:DescribeAddressesAttribute"
         ]
         Resource = "*"
       },
