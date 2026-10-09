@@ -34,5 +34,5 @@ module "app-stack" {
   db_instance_type        = var.db_instance_type
   allocated_storage       = 20
   deletion_protection     = true
-  backup_retention_period = 7
+  backup_retention_period = 1
 }
