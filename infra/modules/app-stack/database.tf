@@ -56,7 +56,6 @@ resource "aws_db_instance" "main" {
   allocated_storage               = var.allocated_storage
   storage_type                    = "gp3"
   storage_encrypted               = true
-  kms_key_id                      = var.kms_key_id
   auto_minor_version_upgrade      = true
   enabled_cloudwatch_logs_exports = ["postgresql", "upgrade"]
   copy_tags_to_snapshot           = true
@@ -65,9 +64,9 @@ resource "aws_db_instance" "main" {
   multi_az = false // to expensive...
 
   //auth
-  username                    = "postgres"
-  manage_master_user_password = true
-  db_name                     = "messaging_db"
+  username                      = "postgres"
+  manage_master_user_password   = true
+  db_name                       = "messaging_db"
 
   // network config
   db_subnet_group_name   = aws_db_subnet_group.db.name

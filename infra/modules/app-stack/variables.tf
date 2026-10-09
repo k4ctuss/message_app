@@ -8,11 +8,6 @@ variable "app_name" {
   description = "infrastructure purpose, application name (used in infrastucture environment)"
 }
 
-variable "kms_key_id" {
-  type        = string
-  description = "KMS key ARN used to encrypt the RDS instance"
-}
-
 variable "instance_ami" {
   type        = string
   description = "instance AMI"
