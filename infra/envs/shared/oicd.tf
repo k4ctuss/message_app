@@ -52,7 +52,10 @@ resource "aws_iam_role_policy" "github_actions_permissions" {
           "ec2:DescribeAvailabilityZones",
           "ec2:DescribeIamInstanceProfileAssociations",
           "ec2:DescribeImages",
+<<<<<<< HEAD
           "ec2:DescribeInstanceTypes",
+=======
+>>>>>>> main
           "ec2:DescribeInstanceAttribute",
           "ec2:DescribeInstances",
           "ec2:DescribeNetworkInterfaces",

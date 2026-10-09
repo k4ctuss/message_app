@@ -18,7 +18,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
+<<<<<<< HEAD
       - uses: actions/checkout@v7
+=======
+      - uses: actions/checkout@v4
+>>>>>>> main
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -33,7 +37,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
+<<<<<<< HEAD
       - uses: actions/checkout@v7
+=======
+      - uses: actions/checkout@v4
+>>>>>>> main
       - uses: actions/setup-node@v4
         with:
           node-version: 22
