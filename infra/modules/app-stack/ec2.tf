@@ -45,7 +45,7 @@ resource "aws_instance" "app" {
 }
 
 resource "aws_eip" "app_eip" {
-  domain   = "vcp"
+  domain   = "vpc"
   instance = aws_instance.app.id
 
   tags = {
