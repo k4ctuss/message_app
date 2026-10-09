@@ -96,15 +96,16 @@ resource "aws_iam_role_policy" "github_actions_permissions" {
         Resource = "*"
       },
       {
-        sid = "ManageElasticIps"
-        actions = [
+        Sid    = "ManageElasticIps"
+        Effect = "Allow"
+        Action = [
           "ec2:AllocateAddress",
           "ec2:ReleaseAddress",
           "ec2:AssociateAddress",
           "ec2:DisassociateAddress",
-          "ec2:DescribeAddresses",
+          "ec2:DescribeAddresses"
         ]
-        resource = "*"
+        Resource = "*"
       },
       {
         Sid    = "TerraformEc2Instances"
