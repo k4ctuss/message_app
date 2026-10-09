@@ -30,6 +30,14 @@ resource "aws_iam_role" "github_actions" {
 
 data "aws_caller_identity" "current" {}
 
+data "aws_kms_key" "rds_default" {
+  key_id = "alias/aws/rds"
+}
+
+data "aws_kms_key" "secretsmanager_default" {
+  key_id = "alias/aws/secretsmanager"
+}
+
 
 # This role is shared by the staging and production Terraform/deployment
 # workflows. Resources created in envs/shared are managed by the bootstrap user.
@@ -261,6 +269,40 @@ resource "aws_iam_role_policy" "github_actions_permissions" {
         Resource = aws_kms_key.shared.arn
       },
       {
+        Sid    = "AwsManagedRdsAndSecretsManagerKeys"
+        Effect = "Allow"
+        Action = [
+          "kms:CreateGrant",
+          "kms:Decrypt",
+          "kms:DescribeKey",
+          "kms:Encrypt",
+          "kms:GenerateDataKey"
+        ]
+        Resource = [
+          data.aws_kms_key.rds_default.arn,
+          data.aws_kms_key.secretsmanager_default.arn
+        ]
+      },
+      {
+        Sid    = "RdsManagedSecretCreation"
+        Effect = "Allow"
+        Action = [
+          "secretsmanager:CreateSecret"
+        ]
+        Resource = "*"
+      },
+      {
+        Sid    = "RdsManagedSecretLifecycle"
+        Effect = "Allow"
+        Action = [
+          "secretsmanager:DescribeSecret",
+          "secretsmanager:PutSecretValue",
+          "secretsmanager:TagResource",
+          "secretsmanager:UpdateSecret"
+        ]
+        Resource = "arn:aws:secretsmanager:us-east-2:${data.aws_caller_identity.current.account_id}:secret:rds!db-*"
+      },
+      {
         Sid    = "ApplicationSecrets"
         Effect = "Allow"
         Action = [
@@ -274,12 +316,17 @@ resource "aws_iam_role_policy" "github_actions_permissions" {
         ]
       },
       {
-        Sid    = "SsmSendDeploymentCommand"
+        Sid      = "SsmRunShellScriptDocument"
+        Effect   = "Allow"
+        Action   = "ssm:SendCommand"
+        Resource = "arn:aws:ssm:us-east-2::document/AWS-RunShellScript"
+      },
+      {
+        Sid    = "SsmSendDeploymentCommandToTaggedInstance"
         Effect = "Allow"
         Action = "ssm:SendCommand"
         Resource = [
-          "arn:aws:ec2:us-east-2:${data.aws_caller_identity.current.account_id}:instance/*",
-          "arn:aws:ssm:us-east-2::document/AWS-RunShellScript"
+          "arn:aws:ec2:us-east-2:${data.aws_caller_identity.current.account_id}:instance/*"
         ]
         Condition = {
           StringEquals = {
