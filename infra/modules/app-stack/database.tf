@@ -38,26 +38,6 @@ resource "aws_db_parameter_group" "main" {
   }
 }
 
-resource "aws_db_parameter_group" "main" {
-    name   = "${local.name_prefix}-db-parameters"
-    family = "postgres18"
-
-    parameter {
-        name  = "log_statement"
-        value = "all"
-    }
-
-    parameter {
-        name  = "log_min_duration_statement"
-        value = "0"
-    }
-
-    tags = {
-        Name        = "${local.name_prefix}-db-parameters"
-        Environment = var.infra_env
-    }
-}
-
 resource "aws_db_instance" "main" {
   # Checkov exceptions: these availability, exposure, and monitoring choices
   # are intentionally retained to avoid changing the existing deployment.
