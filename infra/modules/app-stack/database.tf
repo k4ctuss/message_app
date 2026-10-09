@@ -64,9 +64,9 @@ resource "aws_db_instance" "main" {
   multi_az = false // to expensive...
 
   //auth
-  username                      = "postgres"
-  manage_master_user_password   = true
-  db_name                       = "messaging_db"
+  username                    = "postgres"
+  manage_master_user_password = true
+  db_name                     = "messaging_db"
 
   // network config
   db_subnet_group_name   = aws_db_subnet_group.db.name
