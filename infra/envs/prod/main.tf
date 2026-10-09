@@ -23,11 +23,16 @@ data "aws_ami" "ubuntu" {
   }
 }
 
+data "aws_kms_key" "shared" {
+  key_id = "alias/messaging-app-shared"
+}
+
 module "app-stack" {
   source = "../../modules/app-stack"
 
   infra_env               = "prod"
   app_name                = var.app_name
+  kms_key_id              = data.aws_kms_key.shared.arn
   instance_ami            = data.aws_ami.ubuntu.id
   instance_type           = var.instance_size
   root_volume_size        = 20
