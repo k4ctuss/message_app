@@ -42,7 +42,14 @@ TOKEN_SECRET=$(aws ssm get-parameter \
     --output text)
 
 umask 077
-TEMP_ENV_FILE=$(mktemp "${ENV_FILE}.XXXXXX")
+ENV_DIR=$(dirname "$ENV_FILE")
+mkdir -p "$ENV_DIR"
+chmod 700 "$ENV_DIR"
+
+TEMP_ENV_FILE=$(mktemp "${ENV_FILE}.XXXXXX") || {
+    echo "ERROR: impossible de créer le fichier temporaire pour $ENV_FILE" >&2
+    exit 1
+}
 trap 'rm -f "$TEMP_ENV_FILE"' EXIT
 printf 'NODE_ENV=production\nPORT=3000\nDATABASE_URL=%s\nTOKENSECRET=%s\n' \
     "$DATABASE_URL" "$TOKEN_SECRET" > "$TEMP_ENV_FILE"
