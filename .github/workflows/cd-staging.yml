@@ -26,7 +26,7 @@ jobs:
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-region: ${{ vars.AWS_REGION }}
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: ${{ env.TF_VERSION }}
@@ -51,7 +51,7 @@ jobs:
       id-token: write
       contents: read
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
@@ -60,7 +60,8 @@ jobs:
         run: echo "tag=sha-${{ github.sha }}" >> "$GITHUB_OUTPUT"
       - uses: aws-actions/amazon-ecr-login@v2
         id: ecr
-      - uses: docker/build-push-action@v6
+      - uses: docker/setup-buildx-action@v4
+      - uses: docker/build-push-action@v7
         with:
           push: true
           tags: ${{ steps.ecr.outputs.registry }}/messaging-app:${{ steps.meta.outputs.tag }}
@@ -80,7 +81,7 @@ jobs:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-region: ${{ vars.AWS_REGION }}
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: aws-actions/amazon-ecr-login@v2
         id: ecr
 
@@ -125,7 +126,7 @@ jobs:
       contents: read
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Wait for the public staging health endpoint
         env:

@@ -17,13 +17,13 @@ jobs:
     timeout-minutes: 20
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: docker/setup-buildx-action@v3
+      - uses: docker/setup-buildx-action@v4
 
       # build never pused, only used to validate Dockerfile and to run the e2e. 
       # cache shared with ci.yml and cd-staging via GHA so build is fast if nothing change
-      - uses: docker/build-push-action@v6
+      - uses: docker/build-push-action@v7
         with:
           context: .
           push: false
