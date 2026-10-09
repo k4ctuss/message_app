@@ -112,22 +112,25 @@ jobs:
       - uses: aws-actions/amazon-ecr-login@v2
         id: ecr
 
-      - name: Construire les paramètres SSM
+      - name: Construire les paramètres SSM # Base64-pack the deploy script so SSM decodes and runs it with bash (not dash by default that failed on some syntax).
         run: |
-          FULL_SCRIPT=$(
-            {
-              printf 'export IMAGE_TAG=%q\n' "${{ steps.meta.outputs.image_tag }}"
-              printf 'export ECR_REGISTRY=%q\n' "${{ steps.ecr.outputs.registry }}"
-              printf 'export AWS_REGION=%q\n' "${{ vars.AWS_REGION }}"
-              printf 'export DB_SECRET_ARN=%q\n' "${{ needs.apply.outputs.db_secret_arn }}"
-              printf 'export DB_ENDPOINT=%q\n' "${{ needs.apply.outputs.db_endpoint }}"
-              printf 'export DB_NAME=%q\n' "${{ needs.apply.outputs.db_name }}"
-              printf 'export ENV_FILE=%q\n' "/etc/app/runtime.env"
-              cat .github/workflows/scripts/blue_green.sh
-            }
-          )
-          jq -n --arg script "$FULL_SCRIPT" '{commands: [$script]}' > params.json
-
+          {
+            printf 'export IMAGE_TAG=%q\n' "${{ steps.meta.outputs.image_tag }}"
+            printf 'export ECR_REGISTRY=%q\n' "${{ steps.ecr.outputs.registry }}"
+            printf 'export AWS_REGION=%q\n' "${{ vars.AWS_REGION }}"
+            printf 'export DB_SECRET_ARN=%q\n' "${{ needs.apply.outputs.db_secret_arn }}"
+            printf 'export DB_ENDPOINT=%q\n' "${{ needs.apply.outputs.db_endpoint }}"
+            printf 'export DB_NAME=%q\n' "${{ needs.apply.outputs.db_name }}"
+            printf 'export ENV_FILE=%q\n' "/etc/app/runtime.env"
+            cat .github/workflows/scripts/blue_green.sh
+          } > /tmp/payload.sh
+           
+          B64=$(base64 -w0 /tmp/payload.sh)
+          jq -n --arg b64 "$B64" '{commands: [
+            "echo \($b64) | base64 -d > /root/deploy.sh",
+            "chmod 700 /root/deploy.sh",
+            "bash /root/deploy.sh"
+          ]}' > params.json
       - name: Déployer via SSM
         run: |
           COMMAND_ID=$(aws ssm send-command \
