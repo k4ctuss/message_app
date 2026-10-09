@@ -23,6 +23,7 @@ resource "aws_kms_key" "shared" {
           AWS = aws_iam_role.github_actions.arn
         }
         Action = [
+          "kms:CreateGrant",
           "kms:Decrypt",
           "kms:DescribeKey",
           "kms:Encrypt",

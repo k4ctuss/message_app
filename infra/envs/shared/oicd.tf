@@ -52,7 +52,9 @@ resource "aws_iam_role_policy" "github_actions_permissions" {
           "ec2:DescribeAvailabilityZones",
           "ec2:DescribeIamInstanceProfileAssociations",
           "ec2:DescribeImages",
+          "ec2:DescribeInstanceTypes",
           "ec2:DescribeInstanceAttribute",
+          "ec2:DescribeInstanceCreditSpecifications",
           "ec2:DescribeInstances",
           "ec2:DescribeNetworkInterfaces",
           "ec2:DescribeRegions",
@@ -251,6 +253,7 @@ resource "aws_iam_role_policy" "github_actions_permissions" {
         Effect = "Allow"
         Action = [
           "kms:Decrypt",
+          "kms:CreateGrant",
           "kms:DescribeKey",
           "kms:Encrypt",
           "kms:GenerateDataKey"
