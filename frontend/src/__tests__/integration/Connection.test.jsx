@@ -40,7 +40,7 @@ describe("Connection integration", () => {
         await user.click(screen.getAllByRole("button", { name: "OK" })[1]);
 
         expect(fetch).toHaveBeenCalledWith(
-            "http://localhost:3000/register",
+            "/register",
             expect.objectContaining({ method: "POST" }),
         );
         await waitFor(() => {
