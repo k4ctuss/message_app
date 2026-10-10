@@ -10,8 +10,8 @@ author:
 ## Installation
 
 Dev mode (docker compose needed):
-First create your .env files both in backend and frontend directories, you can use the .env.example files as a template.
-To launch the backend and frontend in dev mode, you can use the following command in the project directory:
+First create your .env files both in back-end and front-end directories, you can use the .env.example files as a template.
+To launch the back-end and front-end in dev mode, you can use the following command in the project directory:
 
 ```sh
   npm run dev
@@ -81,7 +81,7 @@ does not rebuild the image.
 
 ## Code Architecture
 
-### Front-End
+### Front-end
 
 ```
 frontend
@@ -127,7 +127,7 @@ frontend
 `-- vite.config.js
 ```
 
-### Back-End
+### Back-end
 
 ```plantuml
 class User{
@@ -182,8 +182,8 @@ backend
     |   |-- message.js
     |   |-- protected.js
     |   `-- user.js
-    |-- server.js   # entry point of the backend server
-    |-- util        # folder containing utility functions for the backend
+    |-- server.js   # entry point of the back-end server
+    |-- util        # folder containing utility functions for the back-end
     |   |-- CodeError.js
     |   |-- logger.js
     |   |-- swagger.js
@@ -192,7 +192,7 @@ backend
         `-- websocket.js  # folder containing all websocket functions
 ```
 
-### infra
+### Infrastructure
 
 ```
 infra
@@ -227,37 +227,37 @@ infra
 
 ## Tests
 
-### Backend
+### Back-end
 
-Backend tests use Jest and Supertest. They exercise the HTTP API, including
+Back-end tests use Jest and Supertest. They exercise the HTTP API, including
 authentication, users, groups, and messages, against a test database. The
-backend test command also prepares the test database before running the tests.
+back-end test command also prepares the test database before running the tests.
 
-### Frontend
+### Front-end
 
-Frontend unit tests use Vitest and React Testing Library to test components,
+Front-end unit tests use Vitest and React Testing Library to test components,
 hooks, and isolated UI behaviour.
 
-Frontend integration tests use Vitest to test interactions between frontend
+Front-end integration tests use Vitest to test interactions between front-end
 parts and their contexts or application services.
 
-End-to-end tests use Cypress. They run the frontend, backend, and PostgreSQL
+End-to-end tests use Cypress. They run the front-end, back-end, and PostgreSQL
 database together and test complete user workflows through the browser.
 
 ## Git hooks
 
 The `pre-commit` hook runs `lint-staged`. It formats staged JavaScript files
-with Prettier and applies ESLint fixes to the staged backend and frontend
+with Prettier and applies ESLint fixes to the staged back-end and front-end
 files.
 
-The `pre-push` hook runs frontend unit tests and the complete backend Jest test
+The `pre-push` hook runs front-end unit tests and the complete back-end Jest test
 suite. A push is blocked if either test command fails.
 
 ## GitHub Actions workflows
 
-- `ci.yml` runs linting, frontend unit tests, dependency audits, Gitleaks
+- `ci.yml` runs linting, front-end unit tests, dependency audits, Gitleaks
   secret scanning, and the Docker image build on pull requests.
-- `ci-dev.yml` runs backend and frontend integration tests for pull requests
+- `ci-dev.yml` runs back-end and front-end integration tests for pull requests
   targeting `develop`.
 - `e2e-pr.yml` builds the application image, starts PostgreSQL, runs database
   migrations and seeds, then runs Cypress end-to-end tests for pull requests
