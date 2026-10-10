@@ -79,9 +79,9 @@ Images are built once in the staging workflow and tagged with the commit SHA.
 Production deploys the exact same immutable image identified by that SHA; it
 does not rebuild the image.
 
-## Architecture du code
+## Code Architecture
 
-### FrontEnd
+### Front-End
 
 ```
 frontend
@@ -127,11 +127,7 @@ frontend
 `-- vite.config.js
 ```
 
-### Backend
-
-#### Schéma de votre base de donnée
-
-A modifier/compléter...
+### Back-End
 
 ```plantuml
 class User{
