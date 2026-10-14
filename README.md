@@ -7,14 +7,52 @@ author:
 
 ---
 
-## Installation
+Deployed applications:
 
-Dev mode (docker compose needed):
-First create your .env files both in backend and frontend directories, you can use the .env.example files as a template.
-To launch the backend and frontend in dev mode, you can use the following command in the project directory:
+- Staging: http://18.224.84.82/
+- Production: http://3.150.21.134/
+
+## Prerequisites
+
+Install **Node.js** (includes `npm`) and **Docker** (includes Compose) for
+your OS:
+
+| Tool | macOS | Windows | Linux |
+| --- | --- | --- | --- |
+| Node.js | [nodejs.org](https://nodejs.org/en/download) or [nvm](https://github.com/nvm-sh/nvm#installing-and-updating) | [nodejs.org](https://nodejs.org/en/download) | [nodejs.org](https://nodejs.org/en/download) or your distro packages |
+| Docker | [Docker Desktop for Mac](https://docs.docker.com/desktop/setup/install/mac-install/) | [Docker Desktop for Windows](https://docs.docker.com/desktop/setup/install/windows-install/) | [Docker Engine](https://docs.docker.com/engine/install/) |
+
+Verify:
 
 ```sh
-  npm run dev
+node -v
+npm -v
+docker compose version
+```
+
+## Installation
+
+Dev mode (Docker Compose required).
+
+Copy the env templates, then install dependencies in both application
+folders (and at the repo root, needed for `npm run dev`):
+
+```sh
+cp backend/.env.example backend/.env
+cp frontend/.env.example frontend/.env
+
+npm install
+npm --prefix backend install
+npm --prefix frontend install
+```
+
+Edit `backend/.env` and `frontend/.env` (uncomment and set values). See
+the `.env.example` files for the list of variables.
+
+To launch the back-end and front-end in dev mode, from the project directory:
+
+```sh
+npm run dev
 ```
 
 This command creates or restarts a Docker container for the PostgreSQL database, and then launches the backend and frontend in development mode. The backend is available at http://localhost:3000/api, the frontend at http://localhost:5173, and the API documentation at http://localhost:3000/doc. The backend restarts automatically when its code changes, and the frontend reloads automatically when its code changes.
@@ -36,13 +74,15 @@ The application must use the Compose service name `db` in `DATABASE_URL`, not
 
 ```sh
 
-export DATABASE_URL=postgresql://postgres:test@db:5432/messaging
+export DATABASE_URL=postgresql://postgres:YOUR_DB_PASSWORD@db:5432/messaging # replace YOUR_DB_PASSWORD with your password
 export PORT=3000
 export TOKENSECRET=local-development-secret
+export DB_SSL=false 	# ssl encryption between app and bdd is reserve for aws infrastucture
 
 docker compose --profile db --profile app build
 docker compose --profile db --profile app up -d
 ```
+> [!warning] YOUR_DB_PASSWORD should match with DB_PASSWORD in backend/.env because this password stay in the docker volume and is shared between the main DB and test DB and correspond to this volume. It is set and save at the first connection
 
 The application is available at http://localhost:3000. To stop the local
 production stack:
@@ -79,16 +119,112 @@ Images are built once in the staging workflow and tagged with the commit SHA.
 Production deploys the exact same immutable image identified by that SHA; it
 does not rebuild the image.
 
-## Architecture du code
+## Tests
 
-### FrontEnd
+### Back-end
+
+Back-end tests use Jest and Supertest. They exercise the HTTP API, including
+authentication, users, groups, and messages, against a test database. The
+back-end test command also prepares the test database before running the tests.
+
+From `backend/`:
+
+```sh
+npm test
+```
+
+This script runs `setup-test.sh` (test database), then Jest with
+`NODE_ENV=test` and `DB_NAME=messaging_test`. PostgreSQL must be available
+(for example via `npm run dev` from the project root, or the Compose `db`
+profile).
+
+> [!WARNING]
+> Backend tests (including the setup that can reset/seed the test database)
+> **fail on purpose if `DATABASE_URL` is set** (in the environment or in
+> `backend/.env`). This is a safety check so a reset cannot hit a remote
+> or production database by mistake. Unset it before running tests:
+>
+> ```sh
+> unset DATABASE_URL
+> npm test
+> ```
+>
+> For local tests, use `DB_NAME` / `DB_HOST` / `DB_USER` / `DB_PASSWORD`
+> instead of `DATABASE_URL`. Keep `DATABASE_URL` for the Docker production
+> stack and AWS only.
+
+### Front-end
+
+Front-end unit tests use Vitest and React Testing Library to test components,
+hooks, and isolated UI behaviour.
+
+Front-end integration tests use Vitest to test interactions between front-end
+parts and their contexts or application services.
+
+From `frontend/`:
+
+```sh
+npm run test:unit          # Vitest unit tests
+npm run test:integration   # Vitest integration tests
+npm test                   # unit then integration
+```
+
+End-to-end tests use Cypress. They drive the browser against a running
+front-end and API (local stack or a deployed instance) and test complete user
+workflows.
+
+From `frontend/`:
+
+```sh
+npm run test:e2e
+```
+
+Before running Cypress, check that `CYPRESS_BASE_URL` (front-end URL) and
+`CYPRESS_API_URL` (API URL) are set. Cypress reads them from the process
+environment (`export`) or from a `.env`/`.env.test` file in the current directory
+(`frontend/`). See `frontend/.env.example`. If they are missing, Cypress
+falls back to `http://localhost:5173` and `http://localhost:3000`.
+
+Local stack (dev): start the app with `npm run dev` at the project root, then
+in `frontend/`:
+
+```sh
+# either in frontend/.env:
+# CYPRESS_BASE_URL=http://localhost:5173
+# CYPRESS_API_URL=http://localhost:3000
+
+export CYPRESS_BASE_URL=http://localhost:5173
+export CYPRESS_API_URL=http://localhost:3000
+npm run test:e2e
+```
+
+Example against the staging instance (same host for the UI and the API):
+
+```sh
+cd frontend
+export CYPRESS_BASE_URL=http://18.224.84.82
+export CYPRESS_API_URL=http://18.224.84.82
+npm run test:e2e
+```
+
+Equivalent `.env` in `frontend/`:
+
+```
+CYPRESS_BASE_URL=http://18.224.84.82
+CYPRESS_API_URL=http://18.224.84.82
+```
+
+Then `npm run test:e2e` from `frontend/`.
+
+## Code Architecture
+
+### Front-end
 
 ```
 frontend
 |-- components.json
 |-- cypress
 |   |-- e2e
-|   |   `-- connection.cy.js
 |   |-- fixtures
 |   `-- support
 |-- cypress.config.js
@@ -127,11 +263,7 @@ frontend
 `-- vite.config.js
 ```
 
-### Backend
-
-#### Schéma de votre base de donnée
-
-A modifier/compléter...
+### Back-end
 
 ```plantuml
 class User{
@@ -186,8 +318,8 @@ backend
     |   |-- message.js
     |   |-- protected.js
     |   `-- user.js
-    |-- server.js   # entry point of the backend server
-    |-- util        # folder containing utility functions for the backend
+    |-- server.js   # entry point of the back-end server
+    |-- util        # folder containing utility functions for the back-end
     |   |-- CodeError.js
     |   |-- logger.js
     |   |-- swagger.js
@@ -196,7 +328,7 @@ backend
         `-- websocket.js  # folder containing all websocket functions
 ```
 
-### infra
+### Infrastructure
 
 ```
 infra
@@ -229,39 +361,20 @@ infra
 
 ```
 
-## Tests
-
-### Backend
-
-Backend tests use Jest and Supertest. They exercise the HTTP API, including
-authentication, users, groups, and messages, against a test database. The
-backend test command also prepares the test database before running the tests.
-
-### Frontend
-
-Frontend unit tests use Vitest and React Testing Library to test components,
-hooks, and isolated UI behaviour.
-
-Frontend integration tests use Vitest to test interactions between frontend
-parts and their contexts or application services.
-
-End-to-end tests use Cypress. They run the frontend, backend, and PostgreSQL
-database together and test complete user workflows through the browser.
-
 ## Git hooks
 
 The `pre-commit` hook runs `lint-staged`. It formats staged JavaScript files
-with Prettier and applies ESLint fixes to the staged backend and frontend
+with Prettier and applies ESLint fixes to the staged back-end and front-end
 files.
 
-The `pre-push` hook runs frontend unit tests and the complete backend Jest test
+The `pre-push` hook runs front-end unit tests and the complete back-end Jest test
 suite. A push is blocked if either test command fails.
 
 ## GitHub Actions workflows
 
-- `ci.yml` runs linting, frontend unit tests, dependency audits, Gitleaks
+- `ci.yml` runs linting, front-end unit tests, dependency audits, Gitleaks
   secret scanning, and the Docker image build on pull requests.
-- `ci-dev.yml` runs backend and frontend integration tests for pull requests
+- `ci-dev.yml` runs back-end and front-end integration tests for pull requests
   targeting `develop`.
 - `e2e-pr.yml` builds the application image, starts PostgreSQL, runs database
   migrations and seeds, then runs Cypress end-to-end tests for pull requests

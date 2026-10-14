@@ -2,7 +2,7 @@
 set -euo pipefail
 
 ACTIVE_SLOT_FILE="/etc/app/active_slot"
-NGINX_BACKEND_FILE="/etc/nginx/conf.d/active_backend.conf"
+NGINX_BACKEND_FILE="/etc/nginx/active_backend.conf"
 
 HEALTH_CHECK_PATH="/health"
 HEALTH_CHECK_TIMEOUT=120
@@ -59,7 +59,7 @@ trap - EXIT
 
 NEW_IMAGE="${ECR_REGISTRY}/messaging-app:${IMAGE_TAG}"
 
-aws ecr get-login-password --region "${AWS_REGION:-eu-west-3}" \
+aws ecr get-login-password --region "${AWS_REGION:-us-east-2}" \
   | docker login --username AWS --password-stdin "$ECR_REGISTRY"
 
 docker pull "$NEW_IMAGE"
@@ -101,6 +101,7 @@ if ! docker run --rm \
     "$NEW_IMAGE" \
     npm run migrate
 then
+    echo "ERROR: Database migration failed." >&2
     exit 1
 fi
 
@@ -131,6 +132,7 @@ while true; do
 
     if (( elapsed >= HEALTH_CHECK_TIMEOUT )); then
 		# container not healthy, delete and exit
+        echo "ERROR: Health check failed for container $CONTAINER_NAME." >&2
         docker rm -f "$CONTAINER_NAME" || true
         exit 1
     fi
@@ -146,6 +148,7 @@ EOF
 if ! nginx -t; then
     # ERROR: Nginx configuration test failed.
     # Restoring previous backend
+    echo "ERROR: Nginx configuration test failed. Restoring previous backend." >&2
 
     if [[ "$CURRENT_SLOT" == "blue" ]]; then
         CURRENT_PORT="3001"
@@ -160,12 +163,14 @@ if ! nginx -t; then
 server 127.0.0.1:$CURRENT_PORT;
 EOF
     fi
+    echo "rm container: $CONTAINER_NAME"
     docker rm -f "$CONTAINER_NAME" || true
     exit 1
 fi
 
 # Reload Nginx.
 if ! systemctl reload nginx; then
+    echo "ERROR: Failed to reload Nginx." >&2
     exit 1
 fi
 
