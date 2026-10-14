@@ -53,7 +53,7 @@
         "globals": "^17.13.0",
         "jest": "^30.5.1",
         "sequelize-cli": "^6.6.5",
-        "supertest": "^6.2.2"
+        "supertest": "^7.3.1"
     },
     "//uuid-override": "TEMPORAIRE — Sequelize 6 dépend d'un uuid vulnérable (GHSA-w5hq-g745-h8pq). On force uuid ^11.1.1 (dernière branche CommonJS + patchée) le temps que Sequelize corrige. Voir https://github.com/sequelize/sequelize/issues/18238 — À SUPPRIMER une fois Sequelize à jour (npm audit doit rester clean sans l'override).",
     "overrides": {

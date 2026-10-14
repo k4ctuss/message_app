@@ -32,5 +32,5 @@ output "instance_id" {
 
 output "app_url" {
   description = "Url to access the application"
-  value       = "http://${aws_instance.app.public_ip}:80"
+  value       = "http://${aws_eip.app_eip.public_ip}:80"
 }
