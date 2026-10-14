@@ -24,6 +24,7 @@
         "backend/**/*.{js,cjs,mjs}": [
             "prettier --write",
             "bash -c 'cd backend && npx eslint --fix'"
-        ]
+        ],
+        "infra/**/*.{tf,tfvars}": "terraform fmt"
     }
 }

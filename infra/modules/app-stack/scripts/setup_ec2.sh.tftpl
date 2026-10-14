@@ -18,7 +18,7 @@ EOF
 
   # This file is used by the blue-green deployment in production.
   echo "none" > /etc/app/active_slot
-  cat > /etc/nginx/conf.d/active_backend.conf <<'EOF'
+  cat > /etc/nginx/active_backend.conf <<'EOF'
 server 127.0.0.1:3001;
 EOF
 elif [[ "${infra_env}" == "staging" ]]; then
