@@ -61,7 +61,7 @@ jobs:
         continue-on-error: true
 
       - name: Comment Plan on PR
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         env:
           TF_PLAN: ${{ steps.plan.outputs.stdout }}
         with:
