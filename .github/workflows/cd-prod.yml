@@ -16,7 +16,7 @@ jobs:
       id-token: write   # nedeed for github to genrate the oicd token
       contents: read
     steps:
-      - uses: aws-actions/configure-aws-credentials@v4
+      - uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-region: ${{ vars.AWS_REGION }}
@@ -25,7 +25,7 @@ jobs:
         with:
           ref: ${{ inputs.tag }}   # checkout tag's commit
 
-      - uses: hashicorp/setup-terraform@v3
+      - uses: hashicorp/setup-terraform@v4
         with:
           terraform_version: ${{ env.TF_VERSION }}
 
@@ -38,7 +38,7 @@ jobs:
       - run: terraform show -no-color tfplan >> "$GITHUB_STEP_SUMMARY" 
         working-directory: infra/envs/prod
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: tfplan
           path: infra/envs/prod/tfplan
@@ -56,7 +56,7 @@ jobs:
       db_name: ${{ steps.tf-out.outputs.db_name }}
       db_secret_arn: ${{ steps.tf-out.outputs.db_secret_arn }}
     steps:
-      - uses: aws-actions/configure-aws-credentials@v4
+      - uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-region: ${{ vars.AWS_REGION }}
@@ -65,14 +65,14 @@ jobs:
         with:
           ref: ${{ inputs.tag }}   # checkout tag's commit
           
-      - uses: hashicorp/setup-terraform@v3
+      - uses: hashicorp/setup-terraform@v4
         with:
           terraform_version: ${{ env.TF_VERSION }}
 
       - run: terraform init
         working-directory: infra/envs/prod
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with: 
           name: tfplan
           path: infra/envs/prod
@@ -95,7 +95,7 @@ jobs:
       id-token: write   # nedeed for github to genrate the oicd token
       contents: read
     steps:
-      - uses: aws-actions/configure-aws-credentials@v4
+      - uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-region: ${{ vars.AWS_REGION }}

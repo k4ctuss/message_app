@@ -43,3 +43,13 @@ resource "aws_instance" "app" {
     Environment = var.infra_env
   }
 }
+
+resource "aws_eip" "app_eip" {
+  domain   = "vpc"
+  instance = aws_instance.app.id
+
+  tags = {
+    Name        = "${local.name_prefix}-ec2-eip"
+    Environment = var.infra_env
+  }
+}

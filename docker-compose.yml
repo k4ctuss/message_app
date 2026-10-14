@@ -21,10 +21,11 @@ services:
             PORT: ${PORT:-3000}
             TOKENSECRET: ${TOKENSECRET:-}
             DATABASE_URL: ${DATABASE_URL:-}
+            DB_SSL: ${DB_SSL:-false}
         depends_on:
             - db
         ports:
-            - "3000:3000"
+            - "3000:${PORT:-3000}"
 
 volumes:
     db_data:
