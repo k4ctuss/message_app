@@ -320,7 +320,7 @@ backend
     |   `-- user.js
     |-- server.js   # entry point of the back-end server
     |-- util        # folder containing utility functions for the back-end
-    |   |-- CodeError.js
+    |   |-- AppError.js
     |   |-- logger.js
     |   |-- swagger.js
     |   `-- updatedb.js

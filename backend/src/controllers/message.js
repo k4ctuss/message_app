@@ -1,16 +1,19 @@
 const messagesModel = require("../models/messages");
 const usersModel = require("../models/users");
-const CodeError = require("../util/CodeError");
+const {
+    NotFoundError,
+    AppError,
+    ValidationError,
+} = require("../util/AppError");
 
 const status = require("http-status");
 const has = require("has-keys");
 
 async function verifMembership(req, res, next) {
     const { group, user } = req;
-    if (!group || !user)
-        throw new CodeError("group or user undefined", status.BAD_GATEWAY);
+    if (!group || !user) throw new NotFoundError("group or user undefined");
     if (!(await group.hasMember(user)))
-        throw new CodeError("Forbidden", status.FORBIDDEN);
+        throw new AppError("Forbidden", status.FORBIDDEN);
     next();
 }
 
@@ -24,17 +27,18 @@ module.exports = {
                 { model: usersModel, as: "user", attributes: ["id", "name"] },
             ],
         });
-        res.json({ status: true, message: "Return all messages", messages });
+        res.json({
+            status: "success",
+            message: "Return all messages",
+            messages,
+        });
     },
     async newMessage(req, res) {
         // #swagger.tags = ['Messages']
         // #swagger.summary = "Create a message"
         // #swagger.parameters['obj'] = { in: 'body', schema: { $content: 'message content' }}
         if (!has(req.body, ["content"]))
-            throw new CodeError(
-                "message content not provided",
-                status.BAD_REQUEST,
-            );
+            throw new ValidationError("message content not provided");
         const { group, user } = req;
         try {
             await messagesModel.create({
@@ -44,9 +48,9 @@ module.exports = {
             });
         } catch (e) {
             console.error(e);
-            throw new CodeError("insertion error", status.BAD_REQUEST);
+            throw new AppError("Insertion error", status.BAD_REQUEST);
         }
-        res.json({ status: true, message: "message added" });
+        res.json({ status: "success", message: "message added" });
     },
     verifMembership,
 };
