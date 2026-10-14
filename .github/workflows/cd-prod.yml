@@ -16,7 +16,7 @@ jobs:
       id-token: write   # nedeed for github to genrate the oicd token
       contents: read
     steps:
-      - uses: aws-actions/configure-aws-credentials@v4
+      - uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-region: ${{ vars.AWS_REGION }}
@@ -56,7 +56,7 @@ jobs:
       db_name: ${{ steps.tf-out.outputs.db_name }}
       db_secret_arn: ${{ steps.tf-out.outputs.db_secret_arn }}
     steps:
-      - uses: aws-actions/configure-aws-credentials@v4
+      - uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-region: ${{ vars.AWS_REGION }}
@@ -72,7 +72,7 @@ jobs:
       - run: terraform init
         working-directory: infra/envs/prod
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with: 
           name: tfplan
           path: infra/envs/prod
@@ -95,7 +95,7 @@ jobs:
       id-token: write   # nedeed for github to genrate the oicd token
       contents: read
     steps:
-      - uses: aws-actions/configure-aws-credentials@v4
+      - uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-region: ${{ vars.AWS_REGION }}
