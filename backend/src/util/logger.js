@@ -1,5 +1,5 @@
 const morgan = require("morgan");
-const rfs = require("rotating-file-stream");
+const { createStream } = require("rotating-file-stream");
 const path = require("path");
 const fs = require("fs");
 
@@ -10,8 +10,10 @@ const logDirectory = path.resolve(__dirname, "../../log");
 fs.existsSync(logDirectory) || fs.mkdirSync(logDirectory);
 
 // create a rotating write stream
-const accessLogStream = rfs("access.log", {
+const accessLogStream = createStream("access.log", {
     interval: "1d",
+    size: "10M",
+    maxFiles: 14,
     path: logDirectory,
 });
 
