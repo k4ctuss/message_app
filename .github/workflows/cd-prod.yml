@@ -38,7 +38,7 @@ jobs:
       - run: terraform show -no-color tfplan >> "$GITHUB_STEP_SUMMARY" 
         working-directory: infra/envs/prod
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: tfplan
           path: infra/envs/prod/tfplan
