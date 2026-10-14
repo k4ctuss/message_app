@@ -1,7 +1,3 @@
-// Patches
-const { inject, errorHandler } = require("express-custom-error");
-inject(); // Patch express in order to use async / await syntax
-// Require Dependencies
 const express = require("express");
 const cookieParser = require("cookie-parser");
 const cors = require("cors");
@@ -37,14 +33,28 @@ app.use("/", require("./routes/connection.js"));
 
 // health endpoint
 app.get("/health", (req, res) => {
-    res.status(200).json({ status: true, message: "Server is healthy" });
+    res.status(200).json({ status: "success", message: "Server is healthy" });
 });
-
-// Handle errors
-app.use(errorHandler());
 
 // Handle not valid route
-app.use("*", (req, res) => {
-    res.status(404).json({ status: false, message: "Endpoint Not Found" });
+app.use((req, res) => {
+    res.status(404).json({ status: "fail", message: "Endpoint Not Found" });
 });
+
+// error handler
+app.use((err, req, res, next) => {
+    if (res.headersSent) return next(err); // default express error handler
+
+    const statusCode = err.statusCode || 500;
+    const isDev = process.env.NODE_ENV !== "production";
+
+    if (!err.isOperational) console.error(err); // debug if it's a bug and not an AppError (expected error)
+
+    res.status(statusCode).json({
+        status: statusCode >= 500 ? "error" : "fail",
+        message: err.isOperational ? err.message : "Internal server error",
+        ...(isDev && { stack: err.stack }), // stack uniquement en dev
+    });
+});
+
 module.exports = app;

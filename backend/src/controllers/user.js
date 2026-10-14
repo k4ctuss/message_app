@@ -1,7 +1,6 @@
 const status = require("http-status");
 const userModel = require("../models/users.js");
-const has = require("has-keys");
-const CodeError = require("../util/CodeError.js");
+const { ValidationError, AppError } = require("../util/AppError.js");
 const bcrypt = require("bcrypt");
 const jws = require("jws");
 require("mandatoryenv").load(["TOKENSECRET"]);
@@ -18,7 +17,7 @@ async function verifyAdmin(req, res, next) {
     const user = await userModel.findOne({ where: { email: req.login } });
 
     if (!user || !user.isAdmin) {
-        throw new CodeError("Forbidden", status.FORBIDDEN);
+        throw new AppError("Forbidden", status.FORBIDDEN);
     }
     next();
 }
@@ -27,7 +26,7 @@ async function verifyAdmin(req, res, next) {
 async function isUserExist(req, res, next) {
     const user = await userModel.findOne({ where: { email: req.login } });
     if (!user) {
-        throw new CodeError("Forbidden", status.FORBIDDEN);
+        throw new AppError("Forbidden", status.FORBIDDEN);
     }
     req.user = user;
     next();
@@ -38,10 +37,12 @@ module.exports = {
         // #swagger.tags = ['Users']
         // #swagger.summary = 'Verify credentials of user using email and password and return token'
         // #swagger.parameters['obj'] = { in: 'body', schema: { $email: 'John.Doe@acme.com', $password: '12345'}}
-        if (!has(req.body, ["email", "password"]))
-            throw new CodeError(
+        if (
+            !req.body ||
+            !["email", "password"].every((k) => Object.hasOwn(req.body, k))
+        )
+            throw new ValidationError(
                 "You must specify the email and password",
-                status.BAD_REQUEST,
             );
         const { email, password } = req.body;
         const user = await userModel.findOne({ where: { email } });
@@ -54,7 +55,7 @@ module.exports = {
                     secret: TOKENSECRET,
                 });
                 res.json({
-                    status: true,
+                    status: "success",
                     message: "Login/Password ok",
                     token,
                     user: {
@@ -67,30 +68,35 @@ module.exports = {
                 return;
             }
         }
-        res.status(status.FORBIDDEN).json({
-            status: false,
-            message: "Wrong email/password",
-        });
+        throw new AppError("Wrong email/password", status.FORBIDDEN);
     },
     async newUser(req, res) {
         // #swagger.tags = ['Users']
         // #swagger.summary = 'New User'
         // #swagger.parameters['obj'] = { in: 'body', description:'Name and email', schema: { $name: 'John Doe', $email: 'John.Doe@acme.com', $password: '1m02P@SsF0rt!'}}
-        if (!has(req.body, ["name", "email", "password"]))
-            throw new CodeError(
-                "You must specify the name and email",
-                status.BAD_REQUEST,
-            );
+        if (
+            !req.body ||
+            !["name", "email", "password"].every((k) =>
+                Object.hasOwn(req.body, k),
+            )
+        )
+            throw new ValidationError("You must specify the name and email");
         const { name, email, password } = req.body;
-        console.log(req.body);
+        // console.log(req.body);
         if (!validPassword(password))
-            throw new CodeError("Weak password!", status.BAD_REQUEST);
-        await userModel.create({
-            name,
-            email,
-            passhash: await bcrypt.hash(password, 2),
-        });
-        res.json({ status: true, message: "User Added" });
+            throw new ValidationError("Weak password!");
+
+        try {
+            await userModel.create({
+                name,
+                email,
+                passhash: await bcrypt.hash(password, 2),
+            });
+        } catch (e) {
+            console.error(e);
+            throw new AppError("Insertion error", status.BAD_REQUEST);
+        }
+        res.json({ status: "success", message: "User Added" });
     },
     async getUsers(req, res) {
         // #swagger.tags = ['Users']
@@ -98,7 +104,7 @@ module.exports = {
         const users = await userModel.findAll({
             attributes: ["id", "name", "email"],
         });
-        res.json({ status: true, message: "Returning users", users });
+        res.json({ status: "success", message: "Returning users", users });
     },
     async updateUser(req, res) {
         // TODO : verify if the token is valid and correspond to an admin
@@ -106,59 +112,55 @@ module.exports = {
         // #swagger.summary = 'Mettre à jour les informations de l utilisateur (réservé à un utilisateur administrateur)'
         // #swagger.parameters['obj'] = { in: 'body', schema: { $name: 'John Doe', $email: 'John.Doe@acme.com', $password: '1m02P@SsF0rt!' }}
         const userModified = {};
+        const body = req.body ?? {};
         for (const field of ["name", "email", "password"]) {
-            if (has(req.body, field)) {
+            if (Object.hasOwn(body, field)) {
                 if (field === "password") {
-                    userModified.passhash = await bcrypt.hash(
-                        req.body.password,
-                        2,
-                    );
+                    userModified.passhash = await bcrypt.hash(body.password, 2);
                 } else {
-                    userModified[field] = req.body[field];
+                    userModified[field] = body[field];
                 }
             }
         }
         if (Object.keys(userModified).length === 0)
-            throw new CodeError(
+            throw new ValidationError(
                 "You must specify the name, email or password",
-                status.BAD_REQUEST,
             );
         await userModel.update(userModified, { where: { id: req.params.id } });
-        res.json({ status: true, message: "User updated" });
+        res.json({ status: "success", message: "User updated" });
     },
     async deleteUser(req, res) {
         // #swagger.tags = ['Users']
         // #swagger.summary = 'Delete own account, or any user if requester is admin'
-        if (!has(req.params, "id"))
-            throw new CodeError("You must specify the id", status.BAD_REQUEST);
+        if (!Object.hasOwn(req.params, "id"))
+            throw new ValidationError("You must specify the id");
         const targetId = Number(req.params.id);
         if (!Number.isInteger(targetId))
-            throw new CodeError("You must specify the id", status.BAD_REQUEST);
+            throw new ValidationError("You must specify the id");
         if (!req.user.isAdmin && req.user.id !== targetId) {
-            throw new CodeError("Forbidden", status.FORBIDDEN);
+            throw new AppError("Forbidden", status.FORBIDDEN);
         }
         await userModel.destroy({ where: { id: targetId } });
-        res.json({ status: true, message: "User deleted" });
+        res.json({ status: "success", message: "User deleted" });
     },
     async updatePassword(req, res) {
         // #swagger.tags = ['Users']
         // #swagger.summary = 'update password of the currrently logged-in user'
         // #swagger.parameters['obj'] = { in: 'body', schema: { $password: 'myNewPassword123' }}
-        if (!has(req.body, ["password"]) || !req.login)
-            throw new CodeError(
+        if (!req.body || !Object.hasOwn(req.body, "password") || !req.login)
+            throw new ValidationError(
                 "User not connected or password not provided",
-                status.BAD_REQUEST,
             );
         const { password } = req.body;
         console.log(validPassword(password));
         if (!validPassword(password))
-            throw new CodeError("Weak password!", status.BAD_REQUEST);
+            throw new ValidationError("Weak password!");
         const newPasswordHash = await bcrypt.hash(password, 2);
         await userModel.update(
             { passhash: newPasswordHash },
             { where: { email: req.login } },
         );
-        res.json({ status: true, message: "Password updated" });
+        res.json({ status: "success", message: "Password updated" });
     },
     verifyAdmin,
     isUserExist,
