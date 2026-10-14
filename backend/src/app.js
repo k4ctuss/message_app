@@ -37,7 +37,7 @@ app.get("/health", (req, res) => {
 });
 
 // Handle not valid route
-app.use("*", (req, res) => {
+app.use((req, res) => {
     res.status(404).json({ status: "fail", message: "Endpoint Not Found" });
 });
 

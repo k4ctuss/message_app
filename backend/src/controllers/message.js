@@ -7,7 +7,6 @@ const {
 } = require("../util/AppError");
 
 const status = require("http-status");
-const has = require("has-keys");
 
 async function verifMembership(req, res, next) {
     const { group, user } = req;
@@ -37,7 +36,7 @@ module.exports = {
         // #swagger.tags = ['Messages']
         // #swagger.summary = "Create a message"
         // #swagger.parameters['obj'] = { in: 'body', schema: { $content: 'message content' }}
-        if (!has(req.body, ["content"]))
+        if (!req.body || !Object.hasOwn(req.body, "content"))
             throw new ValidationError("message content not provided");
         const { group, user } = req;
         try {

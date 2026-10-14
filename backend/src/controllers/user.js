@@ -1,6 +1,5 @@
 const status = require("http-status");
 const userModel = require("../models/users.js");
-const has = require("has-keys");
 const { ValidationError, AppError } = require("../util/AppError.js");
 const bcrypt = require("bcrypt");
 const jws = require("jws");
@@ -38,7 +37,10 @@ module.exports = {
         // #swagger.tags = ['Users']
         // #swagger.summary = 'Verify credentials of user using email and password and return token'
         // #swagger.parameters['obj'] = { in: 'body', schema: { $email: 'John.Doe@acme.com', $password: '12345'}}
-        if (!has(req.body, ["email", "password"]))
+        if (
+            !req.body ||
+            !["email", "password"].every((k) => Object.hasOwn(req.body, k))
+        )
             throw new ValidationError(
                 "You must specify the email and password",
             );
@@ -66,23 +68,34 @@ module.exports = {
                 return;
             }
         }
-        throw new ValidationError("Wrong email/password", status.FORBIDDEN);
+        throw new AppError("Wrong email/password", status.FORBIDDEN);
     },
     async newUser(req, res) {
         // #swagger.tags = ['Users']
         // #swagger.summary = 'New User'
         // #swagger.parameters['obj'] = { in: 'body', description:'Name and email', schema: { $name: 'John Doe', $email: 'John.Doe@acme.com', $password: '1m02P@SsF0rt!'}}
-        if (!has(req.body, ["name", "email", "password"]))
+        if (
+            !req.body ||
+            !["name", "email", "password"].every((k) =>
+                Object.hasOwn(req.body, k),
+            )
+        )
             throw new ValidationError("You must specify the name and email");
         const { name, email, password } = req.body;
-        console.log(req.body);
+        // console.log(req.body);
         if (!validPassword(password))
             throw new ValidationError("Weak password!");
-        await userModel.create({
-            name,
-            email,
-            passhash: await bcrypt.hash(password, 2),
-        });
+
+        try {
+            await userModel.create({
+                name,
+                email,
+                passhash: await bcrypt.hash(password, 2),
+            });
+        } catch (e) {
+            console.error(e);
+            throw new AppError("Insertion error", status.BAD_REQUEST);
+        }
         res.json({ status: "success", message: "User Added" });
     },
     async getUsers(req, res) {
@@ -99,15 +112,13 @@ module.exports = {
         // #swagger.summary = 'Mettre à jour les informations de l utilisateur (réservé à un utilisateur administrateur)'
         // #swagger.parameters['obj'] = { in: 'body', schema: { $name: 'John Doe', $email: 'John.Doe@acme.com', $password: '1m02P@SsF0rt!' }}
         const userModified = {};
+        const body = req.body ?? {};
         for (const field of ["name", "email", "password"]) {
-            if (has(req.body, field)) {
+            if (Object.hasOwn(body, field)) {
                 if (field === "password") {
-                    userModified.passhash = await bcrypt.hash(
-                        req.body.password,
-                        2,
-                    );
+                    userModified.passhash = await bcrypt.hash(body.password, 2);
                 } else {
-                    userModified[field] = req.body[field];
+                    userModified[field] = body[field];
                 }
             }
         }
@@ -121,7 +132,7 @@ module.exports = {
     async deleteUser(req, res) {
         // #swagger.tags = ['Users']
         // #swagger.summary = 'Delete own account, or any user if requester is admin'
-        if (!has(req.params, "id"))
+        if (!Object.hasOwn(req.params, "id"))
             throw new ValidationError("You must specify the id");
         const targetId = Number(req.params.id);
         if (!Number.isInteger(targetId))
@@ -136,7 +147,7 @@ module.exports = {
         // #swagger.tags = ['Users']
         // #swagger.summary = 'update password of the currrently logged-in user'
         // #swagger.parameters['obj'] = { in: 'body', schema: { $password: 'myNewPassword123' }}
-        if (!has(req.body, ["password"]) || !req.login)
+        if (!req.body || !Object.hasOwn(req.body, "password") || !req.login)
             throw new ValidationError(
                 "User not connected or password not provided",
             );

@@ -1,7 +1,6 @@
 const status = require("http-status");
 const groupModel = require("../models/groups");
 const userModel = require("../models/users");
-const has = require("has-keys");
 const {
     ValidationError,
     NotFoundError,
@@ -9,7 +8,7 @@ const {
 } = require("../util/AppError");
 
 async function loadGroup(req, res, next) {
-    if (!has(req.params, ["gid"]))
+    if (!Object.hasOwn(req.params, "gid"))
         throw new ValidationError("you must specify the group id");
 
     const { gid } = req.params;
@@ -35,7 +34,7 @@ module.exports = {
         // #swagger.tags = ['Groups']
         // #swagger.summary = 'Create a new groupe'
         // #swagger.parameters['obj'] = { in: 'body', schema: { $name: 'myGroupName' }}
-        if (!has(req.body, ["name"]))
+        if (!req.body || !Object.hasOwn(req.body, "name"))
             throw new ValidationError("Group name not provided");
         const { name } = req.body;
         if (!name || name.trim() === "")
@@ -88,7 +87,7 @@ module.exports = {
     async addMember(req, res) {
         // #swagger.tags = ['Groups']
         // #swagger.summary = 'Add an user to Group'
-        if (!has(req.params, ["uid"]))
+        if (!Object.hasOwn(req.params, "uid"))
             throw new ValidationError("User id not provided");
         const { uid } = req.params;
         const newMember = await userModel.findByPk(uid);
@@ -105,7 +104,7 @@ module.exports = {
     async deleteMember(req, res) {
         // #swagger.tags = ['Groups']
         // #swagger.summary = 'Delete an user from Group'
-        if (!has(req.params, ["uid"]))
+        if (!Object.hasOwn(req.params, "uid"))
             throw new ValidationError("User id not provided");
         const { uid } = req.params;
         const member = await userModel.findByPk(uid);
