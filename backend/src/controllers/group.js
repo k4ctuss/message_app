@@ -1,18 +1,19 @@
 const status = require("http-status");
 const groupModel = require("../models/groups");
 const userModel = require("../models/users");
-const has = require("has-keys");
-const CodeError = require("../util/CodeError");
+const {
+    ValidationError,
+    NotFoundError,
+    AppError,
+} = require("../util/AppError");
 
 async function loadGroup(req, res, next) {
-    if (!has(req.params, ["gid"]))
-        throw new CodeError(
-            "you must specify the group id",
-            status.BAD_REQUEST,
-        );
+    if (!Object.hasOwn(req.params, "gid"))
+        throw new ValidationError("you must specify the group id");
+
     const { gid } = req.params;
     const group = await groupModel.findByPk(gid);
-    if (!group) throw new CodeError("Group not found", status.NOT_FOUND);
+    if (!group) throw new NotFoundError("Group not found");
     req.group = group;
     next();
 }
@@ -27,17 +28,17 @@ module.exports = {
             where.owner = user.id;
         }
         const groups = await groupModel.findAll({ where });
-        res.json({ status: true, message: "Returning my groups", groups });
+        res.json({ status: "success", message: "Returning my groups", groups });
     },
     async newGroup(req, res) {
         // #swagger.tags = ['Groups']
         // #swagger.summary = 'Create a new groupe'
         // #swagger.parameters['obj'] = { in: 'body', schema: { $name: 'myGroupName' }}
-        if (!has(req.body, ["name"]))
-            throw new CodeError("Group name not provided", status.BAD_REQUEST);
+        if (!req.body || !Object.hasOwn(req.body, "name"))
+            throw new ValidationError("Group name not provided");
         const { name } = req.body;
         if (!name || name.trim() === "")
-            throw new CodeError("Group name invalid", status.BAD_REQUEST);
+            throw new ValidationError("Group name invalid");
         const { user } = req;
         try {
             const newGroup = await groupModel.create({ name: name.trim() });
@@ -47,9 +48,9 @@ module.exports = {
                 e.errors[0].message == "name must be unique"
                     ? "name already use"
                     : "insertion Error";
-            throw new CodeError(message, status.BAD_REQUEST);
+            throw new ValidationError(message);
         }
-        res.json({ status: true, message: "Group added" });
+        res.json({ status: "success", message: "Group added" });
     },
     async getMembers(req, res) {
         // #swagger.tags = ['Groups']
@@ -64,9 +65,13 @@ module.exports = {
             owner.id == user.id ||
             members.some((member) => member.id === user.id)
         )) {
-            throw new CodeError("Forbidden", status.FORBIDDEN);
+            throw new AppError("Forbidden", status.FORBIDDEN);
         }
-        res.json({ status: true, message: "Returning all members", members });
+        res.json({
+            status: "success",
+            message: "Returning all members",
+            members,
+        });
     },
     async deleteGroup(req, res) {
         // #swagger.tags = ['Groups']
@@ -74,37 +79,36 @@ module.exports = {
         const { user, group } = req;
         const owner = await group.getCreateOrOwn({ attributes: ["id"] });
         if (!user.isAdmin && owner.id != user.id) {
-            throw new CodeError("Forbidden", status.FORBIDDEN);
+            throw new AppError("Forbidden", status.FORBIDDEN);
         }
         await group.destroy();
-        res.json({ status: true, message: "group deleted" });
+        res.json({ status: "success", message: "group deleted" });
     },
     async addMember(req, res) {
         // #swagger.tags = ['Groups']
         // #swagger.summary = 'Add an user to Group'
-        if (!has(req.params, ["uid"]))
-            throw new CodeError("User id not provided", status.BAD_REQUEST);
+        if (!Object.hasOwn(req.params, "uid"))
+            throw new ValidationError("User id not provided");
         const { uid } = req.params;
         const newMember = await userModel.findByPk(uid);
-        if (!newMember)
-            throw new CodeError("User id invalid", status.BAD_REQUEST);
+        if (!newMember) throw new ValidationError("User id invalid");
         const { group, user } = req;
         const owner = await group.getCreateOrOwn({ attributes: ["id"] });
 
         if (!user.isAdmin && owner.id !== user.id)
-            throw new CodeError("Forbidden", status.FORBIDDEN);
+            throw new AppError("Forbidden", status.FORBIDDEN);
 
         await group.addMember(newMember);
-        res.json({ status: true, message: "New member added" });
+        res.json({ status: "success", message: "New member added" });
     },
     async deleteMember(req, res) {
         // #swagger.tags = ['Groups']
         // #swagger.summary = 'Delete an user from Group'
-        if (!has(req.params, ["uid"]))
-            throw new CodeError("User id not provided", status.BAD_REQUEST);
+        if (!Object.hasOwn(req.params, "uid"))
+            throw new ValidationError("User id not provided");
         const { uid } = req.params;
         const member = await userModel.findByPk(uid);
-        if (!member) throw new CodeError("User id invalid", status.BAD_REQUEST);
+        if (!member) throw new ValidationError("User id invalid");
 
         const { group, user } = req;
         const owner = await group.getCreateOrOwn({ attributes: ["id"] });
@@ -115,10 +119,10 @@ module.exports = {
             owner.id === user.id ||
             (uid == user.id && members.some((m) => m.id === user.id))
         ))
-            throw new CodeError("Forbidden", status.FORBIDDEN);
+            throw new AppError("Forbidden", status.FORBIDDEN);
 
         await group.removeMember(uid);
-        res.json({ status: true, message: "Member deleted" });
+        res.json({ status: "success", message: "Member deleted" });
     },
     async getJoinedGroups(req, res) {
         // #swagger.tags = ['Groups']
@@ -126,7 +130,7 @@ module.exports = {
         const { user } = req;
         const groups = await user.getGroups();
         res.json({
-            status: true,
+            status: "success",
             message: "Returning all groups of which user is a member",
             groups,
         });

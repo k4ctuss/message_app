@@ -1,6 +1,8 @@
 const express = require("express");
 const router = express.Router();
 const jws = require("jws");
+const status = require("http-status");
+const { AppError } = require("../util/AppError.js");
 const { TOKENSECRET } = process.env;
 
 // This middleware adds the json header to every response for the api
@@ -12,11 +14,11 @@ router.use("/", (req, res, next) => {
         !req.headers ||
         !Object.hasOwnProperty.call(req.headers, "x-access-token")
     ) {
-        throw { code: 403, message: "Token missing" };
+        throw new AppError("Token missing", status.FORBIDDEN);
     }
     // Code vérifiant la validité du token
     if (!jws.verify(req.headers["x-access-token"], "HS256", TOKENSECRET)) {
-        throw { code: 403, message: "Token invalid" };
+        throw new AppError("Token invalid", status.FORBIDDEN);
     }
     // Le payload du token contient le login de l'utilisateur
     // On modifie l'objet requête pour mettre le login à disposition pour les middleware suivants

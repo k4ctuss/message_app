@@ -84,7 +84,7 @@ test("Test user sign up", async() => {
         password: "1Mot2passe*plusfort",
     });
     expect(response.statusCode).toBe(400);
-    expect(response.body.message).toBe("Validation error");
+    expect(response.body.message).toBe("Insertion error");
     rows = await findUsersByEmail(email);
     expect(rows).toHaveLength(1);
     expect(rows[0].id).toBe(createdId);

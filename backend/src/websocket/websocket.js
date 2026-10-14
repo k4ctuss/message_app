@@ -1,5 +1,6 @@
 const jws = require("jws");
-const CodeError = require("../util/CodeError");
+const status = require("http-status");
+const { AppError } = require("../util/AppError");
 
 const usersModel = require("../models/users");
 const messagesModel = require("../models/messages");
@@ -10,11 +11,11 @@ const { TOKENSECRET } = process.env;
 // utils functions
 function verifyToken(token) {
     if (!token) {
-        throw new CodeError("Token missing", 403);
+        throw new AppError("Token missing", status.FORBIDDEN);
     }
 
     if (!jws.verify(token, "HS256", TOKENSECRET)) {
-        throw new CodeError("Token invalid", 403);
+        throw new AppError("Token invalid", status.FORBIDDEN);
     }
 
     return jws.decode(token).payload;
