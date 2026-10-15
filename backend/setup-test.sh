@@ -2,15 +2,14 @@
 set -eu
 
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd) # dossier contenant le script
-PROJECT_DIR=$(CDPATH= cd -- "$SCRIPT_DIR/.." && pwd)    # dossier du prjet
-COMPOSE_FILE="$PROJECT_DIR/docker-compose.yml"
+COMPOSE_FILE="./docker-compose.test.yml"
 
 docker compose \
   -f "$COMPOSE_FILE" \
   --profile db up -d
 
 attempt=0
-until docker exec messaging-db pg_isready -U postgres -d postgres >/dev/null 2>&1; do
+until docker exec db-test pg_isready -U test -d test >/dev/null 2>&1; do
   attempt=$((attempt + 1))
   if [ "$attempt" -ge 30 ]; then
     echo "PostgreSQL n'est pas disponible" >&2
@@ -19,18 +18,18 @@ until docker exec messaging-db pg_isready -U postgres -d postgres >/dev/null 2>&
   sleep 1
 done
 
-exists=$(docker exec messaging-db \
-  psql -U postgres -d postgres -tAc \
-  "SELECT 1 FROM pg_database WHERE datname = 'messaging_test'")
+exists=$(docker exec db-test \
+  psql -U test -d app_test -tAc \
+  "SELECT 1 FROM pg_database WHERE datname = 'app_test'")
 
 if [ "$exists" != "1" ]; then
-  docker exec messaging-db createdb -U postgres messaging_test
+  docker exec db-test createdb -U test app_test
 fi
 
 # check if the database has received migration
 # SequelizeMeta, indicate if some migrations have been executed
-has_meta_table=$(docker exec messaging-db \
-  psql -U postgres -d messaging_test -tAc \
+has_meta_table=$(docker exec db-test \
+  psql -U test -d app_test -tAc \
   "SELECT EXISTS (
      SELECT 1
      FROM pg_catalog.pg_tables
@@ -39,8 +38,8 @@ has_meta_table=$(docker exec messaging-db \
    )")
 
 if [ "$has_meta_table" = "t" ]; then
-  has_migrations=$(docker exec messaging-db \
-    psql -U postgres -d messaging_test -tAc \
+  has_migrations=$(docker exec db-test \
+    psql -U test -d app_test -tAc \
     "SELECT EXISTS (
        SELECT 1
        FROM public.\"SequelizeMeta\"

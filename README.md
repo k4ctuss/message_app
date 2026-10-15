@@ -39,7 +39,6 @@ folders (and at the repo root, needed for `npm run dev`):
 
 ```sh
 cp backend/.env.example backend/.env
-cp backend/.env.example backend/.env.test
 cp frontend/.env.example frontend/.env
 
 npm install

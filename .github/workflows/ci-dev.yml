@@ -34,5 +34,5 @@ jobs:
           cache-dependency-path: backend/package-lock.json
       - run: npm ci
         working-directory: backend
-      - run: TOKENSECRET="test-integration" npm run test
+      - run: npm run test
         working-directory: backend
