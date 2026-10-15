@@ -59,4 +59,4 @@ else
 fi
 
 cd "$SCRIPT_DIR"
-NODE_ENV=test DB_RESET="$DB_RESET" DB_SEED=true npm run updatedb
+DB_RESET="$DB_RESET" DB_SEED=true node --env-file=.env.test src/util/updatedb.js

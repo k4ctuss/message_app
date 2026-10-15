@@ -3,6 +3,7 @@ const cookieParser = require("cookie-parser");
 const cors = require("cors");
 const helmet = require("helmet");
 const logger = require("./util/logger");
+const env = require("../config/env");
 
 // Instantiate an Express Application
 const app = express();
@@ -46,7 +47,7 @@ app.use((err, req, res, next) => {
     if (res.headersSent) return next(err); // default express error handler
 
     const statusCode = err.statusCode || 500;
-    const isDev = process.env.NODE_ENV !== "production";
+    const isDev = !env.isProduction;
 
     if (!err.isOperational) console.error(err); // debug if it's a bug and not an AppError (expected error)
 

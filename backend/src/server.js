@@ -1,13 +1,5 @@
-/* Pour info, ce point de départ est une adaptation de celui qui vous obtiendriez
-en faisant npm create backend
-issu du dépôt
-<https://github.com/ChoqueCastroLD/create-backend/tree/master/src/template/js>
-*/
-
-// Load Enviroment Variables to process.env (if not present take variables defined in .env file)
-require("mandatoryenv").load(["PORT"]);
 const { initWebSocket } = require("./websocket/websocket");
-const { PORT } = process.env;
+const env = require("../config/env");
 
 // Instantiate an Express Application
 const app = require("./app");
@@ -22,4 +14,6 @@ const io = require("socket.io")(server, {
 initWebSocket(io);
 
 // Open Server on selected Port
-server.listen(PORT, () => console.info("Server listening on port ", PORT));
+server.listen(env.PORT, () =>
+    console.info("Server listening on port ", env.PORT),
+);

@@ -6,7 +6,7 @@ const usersModel = require("../models/users");
 const messagesModel = require("../models/messages");
 const groupsModel = require("../models/groups");
 
-const { TOKENSECRET } = process.env;
+const { TOKENSECRET } = require("../../config/env");
 
 // utils functions
 function verifyToken(token) {

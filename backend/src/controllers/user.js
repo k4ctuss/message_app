@@ -3,8 +3,7 @@ const userModel = require("../models/users.js");
 const { ValidationError, AppError } = require("../util/AppError.js");
 const bcrypt = require("bcrypt");
 const jws = require("jws");
-require("mandatoryenv").load(["TOKENSECRET"]);
-const { TOKENSECRET } = process.env;
+const { TOKENSECRET } = require("../../config/env");
 
 function validPassword(password) {
     return /^(?=.*[\d])(?=.*[A-Z])(?=.*[a-z])(?=.*[!@#$%^&*])[\w!@#$%^&*]{8,}$/.test(
