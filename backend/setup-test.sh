@@ -4,9 +4,7 @@ set -eu
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd) # dossier contenant le script
 COMPOSE_FILE="./docker-compose.test.yml"
 
-docker compose \
-  -f "$COMPOSE_FILE" \
-  --profile db up -d
+docker compose -f "$COMPOSE_FILE" up -d
 
 attempt=0
 until docker exec db-test pg_isready -U test -d test >/dev/null 2>&1; do
