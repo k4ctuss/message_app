@@ -1,0 +1,29 @@
+# --- env/secrets ---
+**/.env
+**/.env.*
+!**/.env.example
+
+# --- deps ---
+**/node_modules
+**/npm-debug.log*
+
+# --- local build outputs ---
+**/dist
+**/build
+**/coverage
+
+# --- Git / CI / ide ---
+.git
+.gitignore
+.github
+.vscode
+.idea
+
+# --- Docker ---
+Dockerfile*
+.dockerignore
+docker-compose*.yml
+
+# --- Divers ---
+**/*.log
+**/.DS_Store

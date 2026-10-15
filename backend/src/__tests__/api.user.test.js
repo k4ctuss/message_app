@@ -15,7 +15,7 @@ const {
 const TOKEN_UNKNOW_USER = jws.sign({
     header: { alg: "HS256" },
     payload: "unknown@test.unknow",
-    secret: process.env.TOKENSECRET,
+    secret: require("../../config/env").TOKENSECRET,
 });
 
 const createdEmails = new Set();

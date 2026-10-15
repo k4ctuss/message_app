@@ -43,7 +43,7 @@ TEMP_ENV_FILE=$(mktemp "${ENV_FILE}.XXXXXX") || {
     exit 1
 }
 trap 'rm -f "$TEMP_ENV_FILE"' EXIT
-printf 'NODE_ENV=production\nPORT=3000\nDATABASE_URL=%s\nTOKENSECRET=%s\n' \
+printf 'NODE_ENV=production\nPORT=3000\nDB_SSL=true\nDATABASE_URL=%s\nTOKENSECRET=%s\n' \
     "$DATABASE_URL" "$TOKEN_SECRET" > "$TEMP_ENV_FILE"
 chmod 600 "$TEMP_ENV_FILE"
 mv "$TEMP_ENV_FILE" "$ENV_FILE"

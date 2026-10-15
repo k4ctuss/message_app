@@ -3,7 +3,7 @@ const router = express.Router();
 const jws = require("jws");
 const status = require("http-status");
 const { AppError } = require("../util/AppError.js");
-const { TOKENSECRET } = process.env;
+const { TOKENSECRET } = require("../../config/env");
 
 // This middleware adds the json header to every response for the api
 router.use("/", (req, res, next) => {

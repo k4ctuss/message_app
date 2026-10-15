@@ -46,8 +46,10 @@ npm --prefix backend install
 npm --prefix frontend install
 ```
 
-Edit `backend/.env` and `frontend/.env` (uncomment and set values). See
-the `.env.example` files for the list of variables.
+Edit `backend/.env` and `frontend/.env` with real values. Backend requires
+at least `NODE_ENV`, `PORT`, `TOKENSECRET`, and the `DB_*` connection
+fields (do **not** set `DATABASE_URL` for local/dev). See
+`backend/.env.example` and `backend/config/env.js`.
 
 To launch the back-end and front-end in dev mode, from the project directory:
 
@@ -74,10 +76,11 @@ The application must use the Compose service name `db` in `DATABASE_URL`, not
 
 ```sh
 
+export NODE_ENV=production
 export DATABASE_URL=postgresql://postgres:YOUR_DB_PASSWORD@db:5432/messaging # replace YOUR_DB_PASSWORD with your password
 export PORT=3000
 export TOKENSECRET=local-development-secret
-export DB_SSL=false 	# ssl encryption between app and bdd is reserve for aws infrastucture
+export DB_SSL=false 	# ssl between app and DB is for AWS; disable it for local Compose
 
 docker compose --profile db --profile app build
 docker compose --profile db --profile app up -d
@@ -133,25 +136,25 @@ From `backend/`:
 npm test
 ```
 
-This script runs `setup-test.sh` (test database), then Jest with
-`NODE_ENV=test` and `DB_NAME=messaging_test`. PostgreSQL must be available
-(for example via `npm run dev` from the project root, or the Compose `db`
-profile).
+This script runs `setup-test.sh` (test database), then Jest via
+`node --env-file=.env.test`. Config comes from `backend/.env.test`
+(`NODE_ENV=test`, `DB_NAME=messaging_test`, etc.). PostgreSQL must be
+available (for example via `npm run dev` from the project root, or the
+Compose `db` profile).
 
 > [!WARNING]
 > Backend tests (including the setup that can reset/seed the test database)
-> **fail on purpose if `DATABASE_URL` is set** (in the environment or in
-> `backend/.env`). This is a safety check so a reset cannot hit a remote
-> or production database by mistake. Unset it before running tests:
+> **fail on purpose if `DATABASE_URL` is set** in the process environment.
+> `config/env.js` rejects `DATABASE_URL` outside production so a reset
+> cannot hit a remote database. Unset it before running tests:
 >
 > ```sh
 > unset DATABASE_URL
 > npm test
 > ```
 >
-> For local tests, use `DB_NAME` / `DB_HOST` / `DB_USER` / `DB_PASSWORD`
-> instead of `DATABASE_URL`. Keep `DATABASE_URL` for the Docker production
-> stack and AWS only.
+> Local/dev and tests use `DB_HOST` / `DB_USER` / `DB_PASSWORD` / `DB_NAME`.
+> Keep `DATABASE_URL` for the Docker production stack and AWS only.
 
 ### Front-end
 
@@ -291,7 +294,10 @@ User "1" -- "n"  Group : create and own
 ```
 backend
 |-- config
-|   `-- config.js
+|   |-- config.js     # Sequelize config (reads config/env.js)
+|   `-- env.js        # validated environment variables
+|-- .env.example
+|-- .env.test         # env file used by npm test
 |-- jest.config.js
 |-- jest.setup.js
 |-- migrations/       # folder containing the migration files for the database
