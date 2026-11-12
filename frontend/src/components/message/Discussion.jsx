@@ -111,7 +111,7 @@ export function Discussion() {
                                   </Fragment>
                               ))
                             : messages.map((m, i) => (
-                                  <Fragment key={i}>
+                                  <Fragment key={m.id}>
                                       {m.user.id == user.id ? (
                                           <div
                                               key={m.id}

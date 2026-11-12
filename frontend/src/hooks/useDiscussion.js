@@ -13,7 +13,7 @@ export function useDiscussion(gid) {
     const isValidGid = Boolean(gid) && Number.isInteger(Number(gid));
     const error = !isValidGid ? "groupe invalid" : fetchError;
 
-    async function requestMessages(gid) {
+    const requestMessages = useCallback(async () => {
         const res = await fetch(`${API_URL}/api/messages/${gid}`, {
             method: "GET",
             credentials: "include",
@@ -21,13 +21,22 @@ export function useDiscussion(gid) {
         const data = await res.json();
         if (!res.ok) throw new Error(data.message || "Erreur de chargement");
         return data.messages;
-    }
+    }, [gid]);
+
+    const appendMessage = useCallback((message) => {
+        setMessages((currentMessages) => {
+            if (currentMessages.some((current) => current.id === message.id)) {
+                return currentMessages;
+            }
+            return [...currentMessages, message];
+        });
+    }, []);
 
     const fetchMessages = useCallback(async () => {
         if (!isValidGid) return;
 
         try {
-            setMessages(await requestMessages(gid));
+            setMessages(await requestMessages());
             setFetchError(null);
         } catch (err) {
             console.error(err);
@@ -37,7 +46,7 @@ export function useDiscussion(gid) {
         } finally {
             setIsLoading(false);
         }
-    }, [gid, isValidGid]);
+    }, [isValidGid, requestMessages]);
 
     const addMessage = useCallback(
         async (content) => {
@@ -89,19 +98,18 @@ export function useDiscussion(gid) {
                 if (res.status === "NOK") setFetchError(res.message);
                 else {
                     setFetchError(null);
-                    fetchMessages();
                 }
             });
         },
-        [socket, gid, isValidGid, addMessage, fetchMessages],
+        [socket, gid, isValidGid, addMessage],
     );
 
-    //chargement initial + resync si gid change, On ne peux pas appeler fetch message car la usecallbakc empeche lint de voir que les setState son fait apres les await.
+    // Chargement initial et resynchronisation lorsque le groupe change.
     useEffect(() => {
         if (!isValidGid) return;
         let ignore = false;
 
-        requestMessages(gid)
+        requestMessages()
             .then((msgs) => {
                 if (ignore) return;
                 setMessages(msgs);
@@ -117,7 +125,7 @@ export function useDiscussion(gid) {
         return () => {
             ignore = true;
         };
-    }, [gid, isValidGid]);
+    }, [isValidGid, requestMessages]);
 
     //abonnement socket (une responsabilité séparée)
     useEffect(() => {
@@ -126,8 +134,7 @@ export function useDiscussion(gid) {
         socket.emit("joinDiscussion", gid);
 
         const onReceive = (message) => {
-            console.log("received", message);
-            setMessages((prev) => [...prev, message]);
+            appendMessage(message);
         };
         socket.on("receivedMessage", onReceive);
 
@@ -136,7 +143,7 @@ export function useDiscussion(gid) {
             socket.off("receivedMessage", onReceive);
             socket.emit("leaveDiscussion", gid);
         };
-    }, [socket, gid, isValidGid]);
+    }, [socket, gid, isValidGid, appendMessage]);
 
     return {
         isLoading,

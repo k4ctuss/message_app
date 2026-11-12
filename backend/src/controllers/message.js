@@ -25,6 +25,7 @@ module.exports = {
             include: [
                 { model: usersModel, as: "user", attributes: ["id", "name"] },
             ],
+            order: [["id", "ASC"]],
         });
         res.json({
             status: "success",
