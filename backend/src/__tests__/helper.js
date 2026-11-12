@@ -79,7 +79,7 @@ async function createTestUser(
     expect(login.headers["set-cookie"]).toBeDefined();
     expect(login.headers["set-cookie"]).toHaveLength(1);
 
-    const cookie = login.headers["set-cookie"][0];
+    const cookie = login.headers["set-cookie"][0].split(";")[0];
     const currentUser = await request(app).get("/api/me").set("Cookie", cookie);
     expect(currentUser.status).toBe(200);
     expect(currentUser.body.user.id).toBeDefined();

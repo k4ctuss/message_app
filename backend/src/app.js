@@ -15,7 +15,14 @@ app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 // Configure custom logger middleware
 app.use(logger.dev, logger.combined);
 app.use(cookieParser());
-app.use(cors());
+if (env.isDevelopment) {
+    app.use(
+        cors({
+            origin: "http://localhost:5173",
+            credentials: true,
+        }),
+    );
+}
 app.use(helmet());
 
 // Swagger Documentation

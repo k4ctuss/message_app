@@ -35,7 +35,13 @@ async function loadGroup(gid) {
 function initWebSocket(io) {
     io.use((socket, next) => {
         try {
-            const token = socket.handshake.auth.token;
+            const cookies = socket.handshake.headers.cookie
+                ?.split(";")
+                .map((cookie) => cookie.trim());
+            const authCookie = cookies?.find((cookie) =>
+                cookie.startsWith("ACCESS_TOKEN_AUTH="),
+            );
+            const token = authCookie?.slice("ACCESS_TOKEN_AUTH=".length);
             const payload = verifyToken(token);
 
             // Ajouter l'user aux données du socket
