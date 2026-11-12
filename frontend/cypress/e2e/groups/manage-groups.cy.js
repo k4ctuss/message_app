@@ -57,7 +57,7 @@ describe("Group management", () => {
             cy.request({
                 method: "GET",
                 url: `${Cypress.expose("apiUrl") || "http://localhost:3000"}/api/mygroups`,
-                headers: { "x-access-token": session.token },
+                headers: { Cookie: session.cookie },
             }).then((response) => {
                 const group = response.body.groups.find(
                     (g) => g.name === groupName,

@@ -1,18 +1,16 @@
-import { useAuth } from "@/contexts/auth-context";
 import { useSocket } from "@/contexts/socket-context";
 import { useCallback, useEffect, useState } from "react";
 import { API_URL } from "@/config/api";
 
-async function requestGroups(type, token) {
+async function requestGroups(type) {
     const endpoint = `${API_URL}/api/${type === "admin" ? "mygroups" : "groupsmember"}`;
-    const res = await fetch(endpoint, { headers: { "x-access-token": token } });
+    const res = await fetch(endpoint, { credentials: "include" });
     const data = await res.json();
     if (!res.ok) throw new Error(data.message);
     return data.groups;
 }
 
 export function useGroups(type = "member") {
-    const { token } = useAuth();
     const { socket } = useSocket();
 
     const [groups, setGroups] = useState([]);
@@ -21,7 +19,7 @@ export function useGroups(type = "member") {
 
     const fetchGroups = useCallback(async () => {
         try {
-            setGroups(await requestGroups(type, token));
+            setGroups(await requestGroups(type));
             setError(null);
         } catch (err) {
             setError(
@@ -31,7 +29,7 @@ export function useGroups(type = "member") {
         } finally {
             setLoading(false);
         }
-    }, [token, type]);
+    }, [type]);
 
     const createGroup = useCallback(
         async (name) => {
@@ -40,8 +38,8 @@ export function useGroups(type = "member") {
                 setLoading(true);
                 const options = {
                     method: "POST",
+                    credentials: "include",
                     headers: {
-                        "x-access-token": token,
                         "content-type": "application/json",
                     },
                     body: JSON.stringify({ name: name }),
@@ -65,13 +63,13 @@ export function useGroups(type = "member") {
                 setLoading(false);
             }
         },
-        [token, fetchGroups],
+        [fetchGroups],
     );
 
     // chargement initial : inline + ignore → lint content ET race gérée
     useEffect(() => {
         let ignore = false;
-        requestGroups(type, token)
+        requestGroups(type)
             .then((g) => {
                 if (!ignore) {
                     setGroups(g);
@@ -87,7 +85,7 @@ export function useGroups(type = "member") {
         return () => {
             ignore = true;
         };
-    }, [type, token]);
+    }, [type]);
 
     useEffect(() => {
         if (!socket) return;

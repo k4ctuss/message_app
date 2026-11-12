@@ -2,8 +2,11 @@ function apiUrl() {
     return Cypress.expose("apiUrl") || "http://localhost:3000";
 }
 
-function authHeaders(token) {
-    return { "x-access-token": token, "content-type": "application/json" };
+function authHeaders(cookie) {
+    return {
+        "content-type": "application/json",
+        Cookie: cookie,
+    };
 }
 
 Cypress.Commands.add("clearAuth", () => {
@@ -41,9 +44,22 @@ Cypress.Commands.add("loginApi", (account) => {
         })
         .then((response) => {
             if (response.status !== 200) {
-                return { token: null, user: null };
+                return { cookie: null, user: null };
             }
-            return { token: response.body.token, user: response.body.user };
+            const cookie = response.headers["set-cookie"]?.[0]?.split(";")[0];
+            expect(cookie).to.contain("ACCESS_TOKEN_AUTH=");
+
+            return cy
+                .request({
+                    method: "GET",
+                    url: `${apiUrl()}/api/me`,
+                    headers: { Cookie: cookie },
+                    failOnStatusCode: false,
+                })
+                .then((meResponse) => {
+                    expect(meResponse.status).to.eq(200);
+                    return { cookie, user: meResponse.body.user };
+                });
         });
 });
 
@@ -51,7 +67,7 @@ Cypress.Commands.add("createGroupApi", (session, name) => {
     cy.request({
         method: "POST",
         url: `${apiUrl()}/api/mygroups`,
-        headers: authHeaders(session.token),
+        headers: authHeaders(session.cookie),
         body: { name },
     }).then((response) => {
         expect(response.status).to.eq(200);
@@ -61,7 +77,7 @@ Cypress.Commands.add("createGroupApi", (session, name) => {
         .request({
             method: "GET",
             url: `${apiUrl()}/api/mygroups`,
-            headers: authHeaders(session.token),
+            headers: authHeaders(session.cookie),
         })
         .then((response) => {
             const group = response.body.groups.find((g) => g.name === name);
@@ -74,7 +90,7 @@ Cypress.Commands.add("addMemberApi", (session, groupId, userId) => {
     cy.request({
         method: "PUT",
         url: `${apiUrl()}/api/mygroups/${groupId}/${userId}`,
-        headers: authHeaders(session.token),
+        headers: authHeaders(session.cookie),
     }).then((response) => {
         expect(response.status).to.eq(200);
     });
@@ -91,14 +107,14 @@ Cypress.Commands.add("loginUi", (account) => {
 
 Cypress.Commands.add("cleanupE2eAccount", (account) => {
     cy.loginApi(account).then((session) => {
-        if (!session.token || !session.user) {
+        if (!session.user) {
             return;
         }
 
         cy.request({
             method: "GET",
             url: `${apiUrl()}/api/mygroups`,
-            headers: authHeaders(session.token),
+            headers: authHeaders(session.cookie),
             failOnStatusCode: false,
         }).then((response) => {
             const groups = response.body?.groups || [];
@@ -106,7 +122,7 @@ Cypress.Commands.add("cleanupE2eAccount", (account) => {
                 cy.request({
                     method: "DELETE",
                     url: `${apiUrl()}/api/mygroups/${group.id}`,
-                    headers: authHeaders(session.token),
+                    headers: authHeaders(session.cookie),
                     failOnStatusCode: false,
                 });
             });
@@ -115,7 +131,7 @@ Cypress.Commands.add("cleanupE2eAccount", (account) => {
         cy.request({
             method: "GET",
             url: `${apiUrl()}/api/groupsmember`,
-            headers: authHeaders(session.token),
+            headers: authHeaders(session.cookie),
             failOnStatusCode: false,
         }).then((response) => {
             const groups = response.body?.groups || [];
@@ -123,7 +139,7 @@ Cypress.Commands.add("cleanupE2eAccount", (account) => {
                 cy.request({
                     method: "DELETE",
                     url: `${apiUrl()}/api/mygroups/${group.id}/${session.user.id}`,
-                    headers: authHeaders(session.token),
+                    headers: authHeaders(session.cookie),
                     failOnStatusCode: false,
                 });
             });
@@ -132,7 +148,7 @@ Cypress.Commands.add("cleanupE2eAccount", (account) => {
         cy.request({
             method: "DELETE",
             url: `${apiUrl()}/api/users/${session.user.id}`,
-            headers: authHeaders(session.token),
+            headers: authHeaders(session.cookie),
             failOnStatusCode: false,
         });
     });

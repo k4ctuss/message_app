@@ -6,13 +6,13 @@ import { API_URL } from "@/config/api";
 
 export function SocketContextProvider({ children }) {
     const [socket, setSocket] = useState(null);
-    const { token } = useAuth();
+    const { user } = useAuth();
 
     useEffect(() => {
-        if (!token) return;
+        if (!user) return;
 
         const newSocket = io(API_URL, {
-            auth: { token },
+            withCredentials: true,
         });
         newSocket.connect();
 
@@ -32,7 +32,7 @@ export function SocketContextProvider({ children }) {
         return () => {
             newSocket.close();
         };
-    }, [token]);
+    }, [user]);
 
     return (
         <SocketContext.Provider value={{ socket }}>

@@ -1,10 +1,8 @@
-import { useAuth } from "@/contexts/auth-context";
 import { useSocket } from "@/contexts/socket-context";
 import { useCallback, useEffect, useState } from "react";
 import { API_URL } from "@/config/api";
 
 export function useDiscussion(gid) {
-    const { token } = useAuth();
     const { socket } = useSocket();
 
     const [messages, setMessages] = useState([]);
@@ -15,10 +13,10 @@ export function useDiscussion(gid) {
     const isValidGid = Boolean(gid) && Number.isInteger(Number(gid));
     const error = !isValidGid ? "groupe invalid" : fetchError;
 
-    async function requestMessages(gid, token) {
+    async function requestMessages(gid) {
         const res = await fetch(`${API_URL}/api/messages/${gid}`, {
             method: "GET",
-            headers: { "x-access-token": token },
+            credentials: "include",
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.message || "Erreur de chargement");
@@ -29,7 +27,7 @@ export function useDiscussion(gid) {
         if (!isValidGid) return;
 
         try {
-            setMessages(await requestMessages(gid, token));
+            setMessages(await requestMessages(gid));
             setFetchError(null);
         } catch (err) {
             console.error(err);
@@ -39,7 +37,7 @@ export function useDiscussion(gid) {
         } finally {
             setIsLoading(false);
         }
-    }, [gid, token, isValidGid]);
+    }, [gid, isValidGid]);
 
     const addMessage = useCallback(
         async (content) => {
@@ -51,8 +49,8 @@ export function useDiscussion(gid) {
 
                 const options = {
                     method: "POST",
+                    credentials: "include",
                     headers: {
-                        "x-access-token": token,
                         "content-type": "application/json",
                     },
                     body: JSON.stringify({ content: content }),
@@ -76,7 +74,7 @@ export function useDiscussion(gid) {
                 setIsRefetching(false);
             }
         },
-        [gid, token, isValidGid, fetchMessages],
+        [gid, isValidGid, fetchMessages],
     );
 
     const sendMessage = useCallback(
@@ -98,12 +96,12 @@ export function useDiscussion(gid) {
         [socket, gid, isValidGid, addMessage, fetchMessages],
     );
 
-    //chargement initial + resync si token ou gid change, On ne peux pas appeler fetch message car la usecallbakc empeche lint de voir que les setState son fait apres les await.
+    //chargement initial + resync si gid change, On ne peux pas appeler fetch message car la usecallbakc empeche lint de voir que les setState son fait apres les await.
     useEffect(() => {
         if (!isValidGid) return;
         let ignore = false;
 
-        requestMessages(gid, token)
+        requestMessages(gid)
             .then((msgs) => {
                 if (ignore) return;
                 setMessages(msgs);
@@ -119,7 +117,7 @@ export function useDiscussion(gid) {
         return () => {
             ignore = true;
         };
-    }, [gid, token, isValidGid]);
+    }, [gid, isValidGid]);
 
     //abonnement socket (une responsabilité séparée)
     useEffect(() => {

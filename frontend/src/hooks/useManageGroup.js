@@ -1,10 +1,9 @@
 import { useCallback, useEffect, useState } from "react";
-import { useAuth } from "@/contexts/auth-context";
 import { useSocket } from "@/contexts/socket-context";
 import { API_URL } from "@/config/api";
 
-async function requestGroup(gid, token) {
-    const options = { method: "get", headers: { "x-access-token": token } };
+async function requestGroup(gid) {
+    const options = { method: "get", credentials: "include" };
 
     const resGroups = await fetch(`${API_URL}/api/mygroups`, options);
     const dataGroups = await resGroups.json();
@@ -31,7 +30,6 @@ async function requestGroup(gid, token) {
 }
 
 export function useManageGroup(gid) {
-    const { token } = useAuth();
     const { socket } = useSocket();
 
     const [loading, setLoading] = useState(true);
@@ -45,13 +43,13 @@ export function useManageGroup(gid) {
         if (!isValidGid) return;
 
         try {
-            setGroup(await requestGroup(gid, token));
+            setGroup(await requestGroup(gid));
             setFetchError(null);
         } catch (err) {
             console.log(err);
             setFetchError(err.message || "Error de recuperation du groupe");
         }
-    }, [gid, token, isValidGid]);
+    }, [gid, isValidGid]);
 
     const manageMember = useCallback(
         async (type, memberId) => {
@@ -68,7 +66,7 @@ export function useManageGroup(gid) {
 
                 const options = {
                     method: type === "add" ? "put" : "delete",
-                    headers: { "x-access-token": token },
+                    credentials: "include",
                 };
                 const response = await fetch(
                     `${API_URL}/api/mygroups/${gid}/${memberId}`,
@@ -90,7 +88,7 @@ export function useManageGroup(gid) {
                 setLoading(false);
             }
         },
-        [token, gid, fetchGroup],
+        [gid, fetchGroup],
     );
 
     const addMember = useCallback(
@@ -145,7 +143,7 @@ export function useManageGroup(gid) {
     useEffect(() => {
         if (!isValidGid) return;
         let ignore = false;
-        requestGroup(gid, token)
+        requestGroup(gid)
             .then((g) => {
                 if (!ignore) {
                     setGroup(g);
@@ -165,7 +163,7 @@ export function useManageGroup(gid) {
         return () => {
             ignore = true;
         };
-    }, [gid, token, isValidGid]);
+    }, [gid, isValidGid]);
 
     return {
         error,
