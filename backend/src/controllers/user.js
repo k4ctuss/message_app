@@ -4,6 +4,9 @@ const { ValidationError, AppError } = require("../util/AppError.js");
 const bcrypt = require("bcrypt");
 const jws = require("jws");
 const { TOKENSECRET } = require("../../config/env");
+const env = require("../../config/env");
+
+const AUTH_COOKIE_NAME = "ACCESS_TOKEN_AUTH";
 
 function validPassword(password) {
     return /^(?=.*[\d])(?=.*[A-Z])(?=.*[a-z])(?=.*[!@#$%^&*])[\w!@#$%^&*]{8,}$/.test(
@@ -53,21 +56,46 @@ module.exports = {
                     payload: email,
                     secret: TOKENSECRET,
                 });
+                res.cookie(AUTH_COOKIE_NAME, token, {
+                    httpOnly: true,
+                    secure: env.isProduction,
+                    sameSite: "strict",
+                    maxAge: 1000 * 60 * 60 * 24 * 7, // 1 week
+                    path: "/",
+                });
                 res.json({
                     status: "success",
                     message: "Login/Password ok",
-                    token,
-                    user: {
-                        id: user.id,
-                        name: user.name,
-                        email: user.email,
-                        isAdmin: user.isAdmin,
-                    },
                 });
                 return;
             }
         }
         throw new AppError("Wrong email/password", status.FORBIDDEN);
+    },
+    async logout(req, res) {
+        // #swagger.tags = ['Users']
+        // #swagger.summary = 'Logout user'
+        res.clearCookie(AUTH_COOKIE_NAME, {
+            httpOnly: true,
+            secure: env.isProduction,
+            sameSite: "strict",
+            path: "/",
+        });
+        res.json({ status: "success" });
+    },
+    async getCurrentUser(req, res) {
+        // #swagger.tags = ['Users']
+        // #swagger.summary = 'Get current user'
+        res.json({
+            status: "success",
+            message: "Returning current user",
+            user: {
+                id: req.user.id,
+                name: req.user.name,
+                email: req.user.email,
+                isAdmin: req.user.isAdmin,
+            },
+        });
     },
     async newUser(req, res) {
         // #swagger.tags = ['Users']

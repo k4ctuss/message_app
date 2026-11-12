@@ -34,7 +34,7 @@ afterAll(async() => {
 test("Test create message", async() => {
     let response = await request(app)
         .post(`/api/messages/${group.id}`)
-        .set("x-access-token", member.token);
+        .set("Cookie", member.cookie);
     expect(response.statusCode).toBe(400);
     expect(response.body.message).toBe("message content not provided");
 
@@ -51,7 +51,7 @@ test("Test create message", async() => {
     const outsiderContent = `outsider message ${randomUUID()}`;
     response = await request(app)
         .post(`/api/messages/${group.id}`)
-        .set("x-access-token", outsider.token)
+        .set("Cookie", outsider.cookie)
         .send({ content: outsiderContent });
     expect(response.statusCode).toBe(403);
     expect(response.body.message).toBe("Forbidden");
@@ -61,7 +61,7 @@ test("Test create message", async() => {
     const content = `message test ${randomUUID()}`;
     response = await request(app)
         .post(`/api/messages/${group.id}`)
-        .set("x-access-token", member.token)
+        .set("Cookie", member.cookie)
         .send({ content });
     expect(response.statusCode).toBe(200);
     expect(response.body.message).toBe("message added");
@@ -73,7 +73,7 @@ test("Test get messages", async() => {
     const content = `message to read ${randomUUID()}`;
     let response = await request(app)
         .post(`/api/messages/${group.id}`)
-        .set("x-access-token", member.token)
+        .set("Cookie", member.cookie)
         .send({ content });
     expect(response.statusCode).toBe(200);
     expect(await findMessagesByContent(content)).toHaveLength(1);
@@ -84,13 +84,13 @@ test("Test get messages", async() => {
 
     response = await request(app)
         .get(`/api/messages/${group.id}`)
-        .set("x-access-token", outsider.token);
+        .set("Cookie", outsider.cookie);
     expect(response.statusCode).toBe(403);
     expect(response.body.message).toBe("Forbidden");
 
     response = await request(app)
         .get(`/api/messages/${group.id}`)
-        .set("x-access-token", member.token);
+        .set("Cookie", member.cookie);
     expect(response.statusCode).toBe(200);
     expect(response.body.message).toBe("Return all messages");
     expect(response.body.messages.some((m) => m.content === content)).toBe(

@@ -76,10 +76,19 @@ async function createTestUser(
         .post("/login")
         .send({ email: user.email, password: user.password });
     expect(login.status).toBe(200);
-    expect(login.body.token).toBeDefined();
-    expect(login.body.user.id).toBeDefined();
+    expect(login.headers["set-cookie"]).toBeDefined();
+    expect(login.headers["set-cookie"]).toHaveLength(1);
 
-    return { ...user, id: login.body.user.id, token: login.body.token };
+    const cookie = login.headers["set-cookie"][0];
+    const currentUser = await request(app).get("/api/me").set("Cookie", cookie);
+    expect(currentUser.status).toBe(200);
+    expect(currentUser.body.user.id).toBeDefined();
+
+    return {
+        ...user,
+        id: currentUser.body.user.id,
+        cookie,
+    };
 }
 
 // groups
@@ -94,14 +103,14 @@ async function createTestGroup(owner, label, createdGroups) {
 
     let response = await request(app)
         .post("/api/mygroups")
-        .set("x-access-token", owner.token)
+        .set("Cookie", owner.cookie)
         .send({ name });
     expect(response.statusCode).toBe(200);
     expect(response.body.message).toBe("Group added");
 
     response = await request(app)
         .get("/api/mygroups")
-        .set("x-access-token", owner.token);
+        .set("Cookie", owner.cookie);
     expect(response.statusCode).toBe(200);
     const group = response.body.groups.find((g) => g.name === name);
     expect(group).toBeDefined();

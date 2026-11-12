@@ -105,15 +105,42 @@ test("Test if user can log in and list users", async() => {
     let response = await request(app)
         .post("/login")
         .send({ email: sharedUser.email, password: sharedUser.password });
-    expect(response.statusCode).toBe(200);
-    expect(response.body).toHaveProperty("token");
+    expect(response.status).toBe(200);
+    const cookies = response.headers["set-cookie"];
+    expect(cookies).toEqual(
+        expect.arrayContaining([expect.stringContaining("ACCESS_TOKEN_AUTH=")]),
+    );
 
-    response = await request(app)
-        .get("/api/users")
-        .set("x-access-token", response.body.token);
+    expect(cookies[0]).toContain("HttpOnly");
+
+    response = await request(app).get("/api/users").set("Cookie", cookies[0]);
     expect(response.statusCode).toBe(200);
     expect(response.body.message).toBe("Returning users");
     expect(response.body.users.length).toBeGreaterThan(0);
+});
+
+test("Test user logout", async() => {
+    const login = await request(app)
+        .post("/login")
+        .send({ email: sharedUser.email, password: sharedUser.password });
+    expect(login.statusCode).toBe(200);
+
+    const cookie = login.headers["set-cookie"][0];
+    const beforeLogout = await request(app)
+        .get("/api/me")
+        .set("Cookie", cookie);
+    expect(beforeLogout.statusCode).toBe(200);
+
+    const logout = await request(app).post("/logout").set("Cookie", cookie);
+    expect(logout.statusCode).toBe(200);
+    expect(logout.body.status).toBe("success");
+    expect(logout.headers["set-cookie"]).toEqual(
+        expect.arrayContaining([expect.stringContaining("ACCESS_TOKEN_AUTH=")]),
+    );
+
+    const afterLogout = await request(app).get("/api/me");
+    expect(afterLogout.statusCode).toBe(403);
+    expect(afterLogout.body.message).toBe("Token missing");
 });
 
 test("Test user login", async() => {
@@ -151,7 +178,9 @@ test("Test user login", async() => {
         .post("/login")
         .send({ email: sharedUser.email, password: sharedUser.password });
     expect(response.statusCode).toBe(200);
-    expect(response.body).toHaveProperty("token");
+    expect(response.headers["set-cookie"]).toEqual(
+        expect.arrayContaining([expect.stringContaining("ACCESS_TOKEN_AUTH=")]),
+    );
     expect(response.body.message).toBe("Login/Password ok");
 });
 
@@ -162,19 +191,19 @@ test("Test list users", async() => {
 
     response = await request(app)
         .get("/api/users")
-        .set("x-access-token", "invalid.token.sorry");
+        .set("Cookie", "ACCESS_TOKEN_AUTH=invalid.token.sorry");
     expect(response.statusCode).toBe(403);
     expect(response.body.message).toBe("Token invalid");
 
     response = await request(app)
         .get("/api/users")
-        .set("x-access-token", TOKEN_UNKNOW_USER);
+        .set("Cookie", `ACCESS_TOKEN_AUTH=${TOKEN_UNKNOW_USER}`);
     expect(response.statusCode).toBe(403);
     expect(response.body.message).toBe("Forbidden");
 
     response = await request(app)
         .get("/api/users")
-        .set("x-access-token", sharedUser.token);
+        .set("Cookie", sharedUser.cookie);
     expect(response.statusCode).toBe(200);
     expect(response.body.message).toBe("Returning users");
 });
@@ -194,7 +223,7 @@ test("user can delete own account but not another user", async() => {
     // Supprimer un autre user : refusé, et il existe toujours en base
     let response = await request(app)
         .delete(`/api/users/${other.id}`)
-        .set("x-access-token", self.token);
+        .set("Cookie", self.cookie);
     expect(response.statusCode).toBe(403);
     expect(response.body.message).toBe("Forbidden");
     expect(await findUserById(other.id)).not.toBeNull();
@@ -202,7 +231,7 @@ test("user can delete own account but not another user", async() => {
     // Supprimer son propre compte : 200, et il a disparu de la base
     response = await request(app)
         .delete(`/api/users/${self.id}`)
-        .set("x-access-token", self.token);
+        .set("Cookie", self.cookie);
     expect(response.statusCode).toBe(200);
     expect(response.body.message).toBe("User deleted");
     expect(await findUserById(self.id)).toBeNull();
@@ -212,7 +241,7 @@ test("user can delete own account but not another user", async() => {
     // L'autre user peut supprimer son propre compte
     response = await request(app)
         .delete(`/api/users/${other.id}`)
-        .set("x-access-token", other.token);
+        .set("Cookie", other.cookie);
     expect(response.statusCode).toBe(200);
     expect(await findUserById(other.id)).toBeNull();
 });
@@ -230,21 +259,21 @@ test("Test update password", async() => {
 
     response = await request(app)
         .put("/api/password")
-        .set("x-access-token", "invalid.token.sorry")
+        .set("cookie", "ACCESS_TOKEN_AUTH=invalid.token.sorry")
         .send({ password: "myNewPassword123" });
     expect(response.statusCode).toBe(403);
     expect(response.body.message).toBe("Token invalid");
 
     response = await request(app)
         .put("/api/password")
-        .set("x-access-token", TOKEN_UNKNOW_USER)
+        .set("Cookie", `ACCESS_TOKEN_AUTH=${TOKEN_UNKNOW_USER}`)
         .send({ password: "myNewPassword123$" });
     expect(response.statusCode).toBe(403);
     expect(response.body.message).toBe("Forbidden");
 
     response = await request(app)
         .put("/api/password")
-        .set("x-access-token", user.token);
+        .set("Cookie", user.cookie);
     expect(response.statusCode).toBe(400);
     expect(response.body.message).toBe(
         "User not connected or password not provided",
@@ -252,7 +281,7 @@ test("Test update password", async() => {
 
     response = await request(app)
         .put("/api/password")
-        .set("x-access-token", user.token)
+        .set("Cookie", user.cookie)
         .send({ password: "myNewPassword" });
     expect(response.statusCode).toBe(400);
     expect(response.body.message).toBe("Weak password!");
@@ -266,7 +295,7 @@ test("Test update password", async() => {
     // Changement valide
     response = await request(app)
         .put("/api/password")
-        .set("x-access-token", user.token)
+        .set("Cookie", user.cookie)
         .send({ password: newPassword });
     expect(response.statusCode).toBe(200);
     expect(response.body.message).toBe("Password updated");
