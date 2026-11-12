@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const user = require("../controllers/user.js");
 
+router.get("/me", user.isUserExist, user.getCurrentUser);
 router.get("/users", user.isUserExist, user.getUsers);
 router.put("/password", user.isUserExist, user.updatePassword);
 router.put("/users/:id", user.verifyAdmin, user.updateUser);

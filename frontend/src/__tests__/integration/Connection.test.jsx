@@ -24,7 +24,15 @@ describe("Connection integration", () => {
 
     it("connects the signup form to the login form", async () => {
         const user = userEvent.setup();
-        fetch.mockResolvedValue({ ok: true, json: async () => ({}) });
+        fetch
+            .mockResolvedValueOnce({
+                ok: false,
+                json: async () => ({ message: "Token missing" }),
+            })
+            .mockResolvedValueOnce({
+                ok: true,
+                json: async () => ({ status: "success" }),
+            });
         renderConnection();
 
         await user.type(screen.getByLabelText("Nom"), "Integration User");
@@ -39,7 +47,11 @@ describe("Connection integration", () => {
         );
         await user.click(screen.getAllByRole("button", { name: "OK" })[1]);
 
-        expect(fetch).toHaveBeenCalledWith(
+        expect(fetch).toHaveBeenNthCalledWith(1, "/api/me", {
+            credentials: "include",
+        });
+        expect(fetch).toHaveBeenNthCalledWith(
+            2,
             "/register",
             expect.objectContaining({ method: "POST" }),
         );
@@ -52,10 +64,15 @@ describe("Connection integration", () => {
 
     it("displays the API error through the login form", async () => {
         const user = userEvent.setup();
-        fetch.mockResolvedValue({
-            ok: false,
-            json: async () => ({ message: "Wrong email/password" }),
-        });
+        fetch
+            .mockResolvedValueOnce({
+                ok: false,
+                json: async () => ({ message: "Token missing" }),
+            })
+            .mockResolvedValueOnce({
+                ok: false,
+                json: async () => ({ message: "Wrong email/password" }),
+            });
         renderConnection();
 
         await user.type(
@@ -68,5 +85,14 @@ describe("Connection integration", () => {
         expect(
             await screen.findByText("Wrong email/password"),
         ).toBeInTheDocument();
+
+        expect(fetch).toHaveBeenNthCalledWith(
+            2,
+            "/login",
+            expect.objectContaining({
+                method: "POST",
+                credentials: "include",
+            }),
+        );
     });
 });

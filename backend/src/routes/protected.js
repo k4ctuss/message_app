@@ -8,22 +8,19 @@ const { TOKENSECRET } = require("../../config/env");
 // This middleware adds the json header to every response for the api
 router.use("/", (req, res, next) => {
     res.setHeader("Content-Type", "application/json");
-    // cf. https://swagger-autogen.github.io/docs/swagger-2/authentication/api-keys-token/
-    // #swagger.security = [{"apiKeyAuth": []}]
-    if (
-        !req.headers ||
-        !Object.hasOwnProperty.call(req.headers, "x-access-token")
-    ) {
+    // #swagger.security = [{"cookieAuth": []}]
+
+    const token = req.cookies.ACCESS_TOKEN_AUTH;
+
+    if (!token) {
         throw new AppError("Token missing", status.FORBIDDEN);
     }
-    // Code vérifiant la validité du token
-    if (!jws.verify(req.headers["x-access-token"], "HS256", TOKENSECRET)) {
+
+    if (!jws.verify(token, "HS256", TOKENSECRET)) {
         throw new AppError("Token invalid", status.FORBIDDEN);
     }
-    // Le payload du token contient le login de l'utilisateur
-    // On modifie l'objet requête pour mettre le login à disposition pour les middleware suivants
-    req.login = jws.decode(req.headers["x-access-token"]).payload;
-    // On appelle la fonction middleware suivante :
+
+    req.login = jws.decode(token).payload;
     next();
 });
 

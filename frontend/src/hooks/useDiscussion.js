@@ -1,10 +1,8 @@
-import { useAuth } from "@/contexts/auth-context";
 import { useSocket } from "@/contexts/socket-context";
 import { useCallback, useEffect, useState } from "react";
 import { API_URL } from "@/config/api";
 
 export function useDiscussion(gid) {
-    const { token } = useAuth();
     const { socket } = useSocket();
 
     const [messages, setMessages] = useState([]);
@@ -15,21 +13,30 @@ export function useDiscussion(gid) {
     const isValidGid = Boolean(gid) && Number.isInteger(Number(gid));
     const error = !isValidGid ? "groupe invalid" : fetchError;
 
-    async function requestMessages(gid, token) {
+    const requestMessages = useCallback(async () => {
         const res = await fetch(`${API_URL}/api/messages/${gid}`, {
             method: "GET",
-            headers: { "x-access-token": token },
+            credentials: "include",
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.message || "Erreur de chargement");
         return data.messages;
-    }
+    }, [gid]);
+
+    const appendMessage = useCallback((message) => {
+        setMessages((currentMessages) => {
+            if (currentMessages.some((current) => current.id === message.id)) {
+                return currentMessages;
+            }
+            return [...currentMessages, message];
+        });
+    }, []);
 
     const fetchMessages = useCallback(async () => {
         if (!isValidGid) return;
 
         try {
-            setMessages(await requestMessages(gid, token));
+            setMessages(await requestMessages());
             setFetchError(null);
         } catch (err) {
             console.error(err);
@@ -39,7 +46,7 @@ export function useDiscussion(gid) {
         } finally {
             setIsLoading(false);
         }
-    }, [gid, token, isValidGid]);
+    }, [isValidGid, requestMessages]);
 
     const addMessage = useCallback(
         async (content) => {
@@ -51,8 +58,8 @@ export function useDiscussion(gid) {
 
                 const options = {
                     method: "POST",
+                    credentials: "include",
                     headers: {
-                        "x-access-token": token,
                         "content-type": "application/json",
                     },
                     body: JSON.stringify({ content: content }),
@@ -76,7 +83,7 @@ export function useDiscussion(gid) {
                 setIsRefetching(false);
             }
         },
-        [gid, token, isValidGid, fetchMessages],
+        [gid, isValidGid, fetchMessages],
     );
 
     const sendMessage = useCallback(
@@ -91,19 +98,18 @@ export function useDiscussion(gid) {
                 if (res.status === "NOK") setFetchError(res.message);
                 else {
                     setFetchError(null);
-                    fetchMessages();
                 }
             });
         },
-        [socket, gid, isValidGid, addMessage, fetchMessages],
+        [socket, gid, isValidGid, addMessage],
     );
 
-    //chargement initial + resync si token ou gid change, On ne peux pas appeler fetch message car la usecallbakc empeche lint de voir que les setState son fait apres les await.
+    // Chargement initial et resynchronisation lorsque le groupe change.
     useEffect(() => {
         if (!isValidGid) return;
         let ignore = false;
 
-        requestMessages(gid, token)
+        requestMessages()
             .then((msgs) => {
                 if (ignore) return;
                 setMessages(msgs);
@@ -119,7 +125,7 @@ export function useDiscussion(gid) {
         return () => {
             ignore = true;
         };
-    }, [gid, token, isValidGid]);
+    }, [isValidGid, requestMessages]);
 
     //abonnement socket (une responsabilité séparée)
     useEffect(() => {
@@ -128,8 +134,7 @@ export function useDiscussion(gid) {
         socket.emit("joinDiscussion", gid);
 
         const onReceive = (message) => {
-            console.log("received", message);
-            setMessages((prev) => [...prev, message]);
+            appendMessage(message);
         };
         socket.on("receivedMessage", onReceive);
 
@@ -138,7 +143,7 @@ export function useDiscussion(gid) {
             socket.off("receivedMessage", onReceive);
             socket.emit("leaveDiscussion", gid);
         };
-    }, [socket, gid, isValidGid]);
+    }, [socket, gid, isValidGid, appendMessage]);
 
     return {
         isLoading,

@@ -21,7 +21,7 @@ import { SendHorizontal } from "lucide-react";
 import { API_URL } from "@/config/api";
 
 export function Discussion() {
-    const { user, token } = useAuth();
+    const { user } = useAuth();
     const { socket } = useSocket();
     const navigate = useNavigate();
     const params = useParams();
@@ -47,7 +47,7 @@ export function Discussion() {
             `${API_URL}/api/mygroups/${params.gid}/${user.id}`,
             {
                 method: "DELETE",
-                headers: { "x-access-token": token },
+                credentials: "include",
             },
         );
         if (response.ok) navigate("/");
@@ -111,7 +111,7 @@ export function Discussion() {
                                   </Fragment>
                               ))
                             : messages.map((m, i) => (
-                                  <Fragment key={i}>
+                                  <Fragment key={m.id}>
                                       {m.user.id == user.id ? (
                                           <div
                                               key={m.id}

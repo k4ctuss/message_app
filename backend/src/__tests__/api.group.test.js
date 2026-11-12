@@ -28,7 +28,7 @@ test("Test create groups", async() => {
 
     let response = await request(app)
         .post("/api/mygroups")
-        .set("x-access-token", chief.token)
+        .set("Cookie", chief.cookie)
         .send({ name });
     expect(response.statusCode).toBe(200);
     expect(response.body.message).toBe("Group added");
@@ -36,7 +36,7 @@ test("Test create groups", async() => {
 
     response = await request(app)
         .post("/api/mygroups")
-        .set("x-access-token", chief.token)
+        .set("Cookie", chief.cookie)
         .send({ group: name });
     expect(response.statusCode).toBe(400);
     expect(response.body.message).toBe("Group name not provided");
@@ -44,7 +44,7 @@ test("Test create groups", async() => {
     // pas deux groupes du même nom
     response = await request(app)
         .post("/api/mygroups")
-        .set("x-access-token", chief.token)
+        .set("Cookie", chief.cookie)
         .send({ name });
     expect(response.statusCode).toBe(400);
     expect(response.body.message).toBe("name already use");
@@ -53,7 +53,7 @@ test("Test create groups", async() => {
     // Le groupe créé est bien listé, avec le même id qu'en base
     response = await request(app)
         .get("/api/mygroups")
-        .set("x-access-token", chief.token);
+        .set("Cookie", chief.cookie);
     const created = response.body.groups.find((g) => g.name === name);
     expect(created).toBeDefined();
     expect(created.id).toBe((await findGroupsByName(name))[0].id);
@@ -71,7 +71,7 @@ test("Test list all my groups (with admin also).", async() => {
 
     let response = await request(app)
         .get("/api/mygroups")
-        .set("x-access-token", chief.token);
+        .set("Cookie", chief.cookie);
     expect(response.statusCode).toBe(200);
     expect(response.body.message).toBe("Returning my groups");
     expect(response.body).toHaveProperty("groups");
@@ -80,7 +80,7 @@ test("Test list all my groups (with admin also).", async() => {
 
     response = await request(app)
         .get("/api/mygroups")
-        .set("x-access-token", noGroup.token);
+        .set("Cookie", noGroup.cookie);
     expect(response.statusCode).toBe(200);
     expect(response.body.message).toBe("Returning my groups");
     expect(response.body).toHaveProperty("groups");
@@ -90,7 +90,7 @@ test("Test list all my groups (with admin also).", async() => {
     // il dépendrait des groupes créés par les autres fichiers en parallèle.
     response = await request(app)
         .get("/api/mygroups")
-        .set("x-access-token", admin.token);
+        .set("Cookie", admin.cookie);
     expect(response.statusCode).toBe(200);
     expect(response.body.message).toBe("Returning my groups");
     expect(response.body).toHaveProperty("groups");
@@ -110,7 +110,7 @@ test("Test add member in group ", async() => {
     // Un simple user ne peut pas s'ajouter lui-même
     let response = await request(app)
         .put(`/api/mygroups/${group.id}/${member.id}`)
-        .set("x-access-token", member.token);
+        .set("Cookie", member.cookie);
     expect(response.statusCode).toBe(403);
     expect(response.body.message).toBe("Forbidden");
     expect(await isMember(group.id, member.id)).toBe(false);
@@ -118,7 +118,7 @@ test("Test add member in group ", async() => {
     // Le chef ajoute un membre
     response = await request(app)
         .put(`/api/mygroups/${group.id}/${member.id}`)
-        .set("x-access-token", chief.token);
+        .set("Cookie", chief.cookie);
     expect(response.statusCode).toBe(200);
     expect(response.body.message).toBe("New member added");
     expect(await isMember(group.id, member.id)).toBe(true);
@@ -126,7 +126,7 @@ test("Test add member in group ", async() => {
     // L'admin peut ajouter quelqu'un dans un groupe qui n'est pas le sien
     response = await request(app)
         .put(`/api/mygroups/${group.id}/${chief.id}`)
-        .set("x-access-token", admin.token);
+        .set("Cookie", admin.cookie);
     expect(response.statusCode).toBe(200);
     expect(response.body.message).toBe("New member added");
     expect(await isMember(group.id, chief.id)).toBe(true);
@@ -151,7 +151,7 @@ test("Test list members in group", async() => {
     for (const viewer of [member, chief, admin]) {
         const response = await request(app)
             .get(`/api/mygroups/${group.id}`)
-            .set("x-access-token", viewer.token);
+            .set("Cookie", viewer.cookie);
         expect(response.statusCode).toBe(200);
         expect(response.body.message).toBe("Returning all members");
         expect(response.body.members.length).toBe(2);
@@ -162,7 +162,7 @@ test("Test list members in group", async() => {
 
     const response = await request(app)
         .get(`/api/mygroups/${group.id}`)
-        .set("x-access-token", noGroup.token);
+        .set("Cookie", noGroup.cookie);
     expect(response.statusCode).toBe(403);
     expect(response.body.message).toBe("Forbidden");
 });
@@ -189,7 +189,7 @@ test("Test groupsmember endpoint", async() => {
 
     let response = await request(app)
         .get("/api/groupsmember")
-        .set("x-access-token", member.token);
+        .set("Cookie", member.cookie);
     expect(response.statusCode).toBe(200);
     expect(response.body.message).toBe(
         "Returning all groups of which user is a member",
@@ -199,7 +199,7 @@ test("Test groupsmember endpoint", async() => {
 
     response = await request(app)
         .get("/api/groupsmember")
-        .set("x-access-token", chief.token);
+        .set("Cookie", chief.cookie);
     expect(response.statusCode).toBe(200);
     expect(response.body.message).toBe(
         "Returning all groups of which user is a member",
@@ -209,7 +209,7 @@ test("Test groupsmember endpoint", async() => {
 
     response = await request(app)
         .get("/api/groupsmember")
-        .set("x-access-token", admin.token);
+        .set("Cookie", admin.cookie);
     expect(response.statusCode).toBe(200);
     expect(response.body.message).toBe(
         "Returning all groups of which user is a member",
@@ -232,7 +232,7 @@ test("Test delete member in group", async() => {
     // Un membre ne peut pas retirer le chef : refusé, le chef est toujours membre
     let response = await request(app)
         .delete(`/api/mygroups/${group.id}/${chief.id}`)
-        .set("x-access-token", member.token);
+        .set("Cookie", member.cookie);
     expect(response.statusCode).toBe(403);
     expect(response.body.message).toBe("Forbidden");
     expect(await isMember(group.id, chief.id)).toBe(true);
@@ -240,14 +240,14 @@ test("Test delete member in group", async() => {
     // Un membre peut se retirer lui-même
     response = await request(app)
         .delete(`/api/mygroups/${group.id}/${member.id}`)
-        .set("x-access-token", member.token);
+        .set("Cookie", member.cookie);
     expect(response.statusCode).toBe(200);
     expect(response.body.message).toBe("Member deleted");
     expect(await isMember(group.id, member.id)).toBe(false);
 
     response = await request(app)
         .get("/api/groupsmember")
-        .set("x-access-token", member.token);
+        .set("Cookie", member.cookie);
     expect(response.statusCode).toBe(200);
     expect(response.body.groups.length).toBe(0);
 
@@ -256,14 +256,14 @@ test("Test delete member in group", async() => {
 
     response = await request(app)
         .delete(`/api/mygroups/${group.id}/${member.id}`)
-        .set("x-access-token", chief.token);
+        .set("Cookie", chief.cookie);
     expect(response.statusCode).toBe(200);
     expect(await isMember(group.id, member.id)).toBe(false);
 
     // L'admin retire le chef
     response = await request(app)
         .delete(`/api/mygroups/${group.id}/${chief.id}`)
-        .set("x-access-token", admin.token);
+        .set("Cookie", admin.cookie);
     expect(response.statusCode).toBe(200);
     expect(await isMember(group.id, chief.id)).toBe(false);
     expect(await countMembers(group.id)).toBe(0);
@@ -278,7 +278,7 @@ test("Test delete group", async() => {
     // Un autre user ne peut pas supprimer le groupe : il existe toujours en base
     let response = await request(app)
         .delete(`/api/mygroups/${group.id}`)
-        .set("x-access-token", outsider.token);
+        .set("Cookie", outsider.cookie);
     expect(response.statusCode).toBe(403);
     expect(response.body.message).toBe("Forbidden");
     expect(await findGroupById(group.id)).not.toBeNull();
@@ -286,7 +286,7 @@ test("Test delete group", async() => {
     // Le chef supprime son groupe : 200, et il a disparu de la base
     response = await request(app)
         .delete(`/api/mygroups/${group.id}`)
-        .set("x-access-token", chief.token);
+        .set("Cookie", chief.cookie);
     expect(response.statusCode).toBe(200);
     expect(response.body.message).toBe("group deleted");
     expect(await findGroupById(group.id)).toBeNull();
@@ -295,7 +295,7 @@ test("Test delete group", async() => {
     const second = await createTestGroup(chief, "second-group", createdGroups);
     response = await request(app)
         .delete(`/api/mygroups/${second.id}`)
-        .set("x-access-token", admin.token);
+        .set("Cookie", admin.cookie);
     expect(response.statusCode).toBe(200);
     expect(response.body.message).toBe("group deleted");
     expect(await findGroupById(second.id)).toBeNull();

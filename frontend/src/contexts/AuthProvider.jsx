@@ -1,12 +1,8 @@
 import { useCallback, useMemo, useReducer, useEffect } from "react";
-import { setCookie, getCookie } from "@/lib/utils";
 import { AuthContext } from "@/contexts/auth-context";
 import { API_URL } from "@/config/api";
 
-const AUTH_COOKIE = "ACCESS_TOKEN_AUTH";
-
 const initialState = {
-    token: "",
     user: null,
     loading: false,
 };
@@ -16,17 +12,8 @@ function authReducer(state, action) {
         case "SET_LOADING":
             return { ...state, loading: true };
         case "LOGIN_SUCCESS":
-            setCookie(
-                AUTH_COOKIE,
-                JSON.stringify({
-                    token: action.payload.token,
-                    user: action.payload.user,
-                }),
-                1000 * 60 * 60 * 24 * 7,
-            );
             return {
                 ...state,
-                token: action.payload.token,
                 user: action.payload.user,
                 loading: false,
             };
@@ -35,7 +22,7 @@ function authReducer(state, action) {
         case "REQUEST_FAILED":
             return { ...state, loading: false };
         case "LOGOUT":
-            return { ...state, token: "", user: null };
+            return { ...state, user: null, loading: false };
         default:
             return state;
     }
@@ -44,38 +31,68 @@ function authReducer(state, action) {
 export function AuthContextProvider({ children }) {
     const [state, dispatch] = useReducer(authReducer, initialState);
 
-    const login = useCallback(async (email, password) => {
+    const checkAuth = useCallback(async () => {
         dispatch({ type: "SET_LOADING" });
-        const params = {
-            method: "POST",
-            headers: { "content-type": "application/json" },
-            body: JSON.stringify({ email: email, password: password }),
-        };
         try {
-            const response = await fetch(`${API_URL}/login`, params);
+            const response = await fetch(`${API_URL}/api/me`, {
+                credentials: "include",
+            });
+
+            if (!response.ok) {
+                dispatch({ type: "LOGOUT" });
+                return;
+            }
+
             const body = await response.json();
-            if (response.ok) {
+            if (body.user) {
                 dispatch({
                     type: "LOGIN_SUCCESS",
-                    payload: { token: body.token, user: body.user },
+                    payload: { user: body.user },
                 });
-                return { success: true, message: "" };
+                return;
             } else {
-                dispatch({ type: "REQUEST_FAILED" });
-                return {
-                    success: false,
-                    message: body.message || "Erreur inconnue",
-                };
+                dispatch({ type: "LOGOUT" });
+                return;
             }
         } catch (e) {
             console.error(e);
-            dispatch({ type: "REQUEST_FAILED" });
-            return {
-                success: false,
-                message: "Erreur de connexion au serveur",
-            };
+            dispatch({ type: "LOGOUT" });
         }
     }, []);
+
+    const login = useCallback(
+        async (email, password) => {
+            dispatch({ type: "SET_LOADING" });
+            const params = {
+                method: "POST",
+                credentials: "include",
+                headers: { "content-type": "application/json" },
+                body: JSON.stringify({ email: email, password: password }),
+            };
+            try {
+                const response = await fetch(`${API_URL}/login`, params);
+                const body = await response.json();
+                if (response.ok) {
+                    await checkAuth();
+                    return { success: true, message: "" };
+                } else {
+                    dispatch({ type: "REQUEST_FAILED" });
+                    return {
+                        success: false,
+                        message: body.message || "Erreur inconnue",
+                    };
+                }
+            } catch (e) {
+                console.error(e);
+                dispatch({ type: "REQUEST_FAILED" });
+                return {
+                    success: false,
+                    message: "Erreur de connexion au serveur",
+                };
+            }
+        },
+        [checkAuth],
+    );
 
     const signUp = useCallback(async (name, email, password) => {
         dispatch({ type: "SET_LOADING" });
@@ -112,20 +129,15 @@ export function AuthContextProvider({ children }) {
     }, []);
 
     const isConnected = useCallback(() => {
-        return state.token && state.token !== "";
-    }, [state.token]);
+        return state.user !== null;
+    }, [state.user]);
 
-    const checkAuth = useCallback(() => {
-        const { token, user } = JSON.parse(getCookie(AUTH_COOKIE) || "{}");
-        if (!token || !user) return;
-        dispatch({
-            type: "LOGIN_SUCCESS",
-            payload: { token: token, user: user },
+    const logout = useCallback(async () => {
+        await fetch(`${API_URL}/logout`, {
+            method: "POST",
+            credentials: "include",
         });
-    }, []);
 
-    const logout = useCallback(() => {
-        setCookie(AUTH_COOKIE, "", -1);
         if (window.location.hash !== "") {
             window.location.replace(
                 window.location.pathname + window.location.search,
